@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertisseur CSV vers JSON Popina (Nouveau Back-Office)</title>
+    <style>
+        :root {
+            --primary: #e63946;
+            --primary-hover: #d62828;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #2b2d42;
+            --border-color: #e9ecef;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-new {
+            background-color: #2563eb;
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            vertical-align: middle;
+            margin-left: 0.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 0.3rem;
+            font-size: 0.85rem;
+        }
+
+        .form-group input {
+            padding: 0.5rem 0.7rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .input-btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .input-btn-group input {
+            flex: 1;
+        }
+
+        .btn-secondary {
+            background-color: #475569;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #334155;
+        }
+
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 2.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fafafa;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary);
+            background: #fff5f5;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+            display: block;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Convertisseur Popina <span class="badge-new">Nouveau BO</span> <span style="font-size:0.6em; color:#64748b; font-weight:normal;">by cyp</span></h1>
+        <p>Générez votre fichier JSON conforme au nouveau Back-Office de Popina.</p>
+    </header>
+
+    <!-- Informations Établissement -->
+    <div class="card">
+        <h3>Informations de l'Établissement</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="ticket_name">Nom du commerce</label>
+                <input type="text" id="ticket_name" value="BAGUETTE">
+            </div>
+            <div class="form-group">
+                <label for="ticket_company">SIRET / SIREN</label>
+                <input type="text" id="ticket_company" placeholder="Ex: 123 456 789 00012">
+            </div>
+            <div class="form-group">
+                <label for="ticket_tva">N° TVA Intracommunautaire</label>
+                <div class="input-btn-group">
+                    <input type="text" id="ticket_tva" placeholder="Saisir ou générer">
+                    <button type="button" class="btn-secondary" onclick="calculerTVA()">Générer TVA</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="ticket_naf">Code NAF / APE</label>
+                <input type="text" id="ticket_naf" placeholder="Ex: 1071C">
+            </div>
+            <div class="form-group">
+                <label for="ticket_address">Adresse</label>
+                <input type="text" id="ticket_address" placeholder="Ex: 12 Rue de la République">
+            </div>
+            <div class="form-group">
+                <label for="ticket_zip">Code Postal</label>
+                <input type="text" id="ticket_zip" placeholder="Ex: 75001">
+            </div>
+            <div class="form-group">
+                <label for="ticket_city">Ville</label>
+                <input type="text" id="ticket_city" placeholder="Ex: Paris">
+            </div>
+            <div class="form-group">
+                <label for="ticket_phone">Téléphone</label>
+                <input type="text" id="ticket_phone" placeholder="Ex: 01 23 45 67 89">
+            </div>
+            <div class="form-group">
+                <label for="gerant_code">Code vendeur (Gérant)</label>
+                <input type="text" id="gerant_code" value="0000">
+            </div>
+        </div>
+    </div>
+
+    <!-- Import CSV -->
+    <div class="card">
+        <h3>Importer votre fichier CSV</h3>
+        <div class="drop-zone" id="dropZone">
+            <p>Glissez-déposez votre fichier <strong>.csv</strong> ici ou cliquez pour choisir un fichier.</p>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
+        </div>
+    </div>
+
+    <!-- Aperçu et Téléchargement -->
+    <div class="card" id="previewCard" style="display: none;">
+        <h3>Aperçu des données structurées</h3>
+        <div style="overflow-x: auto;">
+            <table id="previewTable">
+                <thead>
+                    <tr>
+                        <th>Groupe (Pos)</th>
+                        <th>Famille (Pos / Groupe)</th>
+                        <th>Nom Article</th>
+                        <th>Prix TTC (€)</th>
+                        <th>TVA (%)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <button class="btn" id="downloadBtn">Télécharger le JSON Nouveau BO Popina</button>
+    </div>
+</div>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const previewCard = document.getElementById('previewCard');
+    const previewTableBody = document.querySelector('#previewTable tbody');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let parsedItems = [];
+    let parsedCardCategories = [];
+    let parsedMacroCategories = [];
+
+    // Fonction de calcul de la TVA Intracommunautaire
+    function calculerTVA() {
+        const companyField = document.getElementById('ticket_company');
+        const tvaField = document.getElementById('ticket_tva');
+        
+        if (!companyField) return;
+
+        const digits = companyField.value.replace(/\D/g, '');
+
+        if (digits.length >= 9) {
+            const sirenStr = digits.substring(0, 9);
+            const sirenNum = parseInt(sirenStr, 10);
+            const cle = (12 + 3 * (sirenNum % 97)) % 97;
+            const cleStr = cle < 10 ? '0' + cle : '' + cle;
+            tvaField.value = `FR${cleStr}${sirenStr}`;
+        } else {
+            alert('Veuillez d\'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.');
+        }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+            handleFile(e.dataTransfer.files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length) {
+            handleFile(e.target.files[0]);
+        }
+    });
+
+    function generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function handleFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            parseCSV(e.target.result);
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function parseCSV(text) {
+        const lines = text.split(/\r\n|\n/);
+        if (lines.length < 2) {
+            alert('Le fichier CSV est vide.');
+            return;
+        }
+
+        const delimiter = text.includes(';') ? ';' : ',';
+        const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+
+        let idxGroupe = headers.findIndex(h => h.includes('groupe') || h.includes('macro'));
+        let idxCat = headers.findIndex((h, idx) => idx !== idxGroupe && (h.includes('famille') || h.includes('categorie') || h.includes('sous-cat')));
+        let idxNom = headers.findIndex(h => h.includes('description') || h.includes('nom') || h.includes('article'));
+        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h.includes('prix'));
+        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h.includes('tva'));
+
+        if (idxGroupe === -1) {
+            if (headers.length >= 2 && (headers[0].includes('cat') || headers[0].includes('famille')) && (headers[1].includes('cat') || headers[1].includes('famille'))) {
+                idxGroupe = 0;
+                idxCat = 1;
+            } else {
+                idxGroupe = -1;
+                if (idxCat === -1) idxCat = 0;
+            }
+        }
+
+        if (idxNom === -1) idxNom = 2;
+        if (idxPrix === -1) idxPrix = 3;
+        if (idxTva === -1) idxTva = 4;
+
+        const macroCategoriesMap = new Map();
+        const categoriesMap = new Map();
+        const macroCatFamilyCounter = new Map();
+        parsedItems = [];
+
+        const taxMap = {
+            "10": "78de92d2-57ce-4998-8faf-364a806052ec",
+            "20": "A58D3A44-34B1-46FC-8481-8101542DA4DE",
+            "5.5": "3515EF97-8B72-4AEF-A3EF-8954E240D11A",
+            "5.50": "3515EF97-8B72-4AEF-A3EF-8954E240D11A"
+        };
+
+        previewTableBody.innerHTML = '';
+        const nowISO = new Date().toISOString();
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+
+            const groupeName = idxGroupe >= 0 ? (cols[idxGroupe] || 'Groupe 1') : 'Groupe 1';
+            const categoryName = cols[idxCat] || 'Général';
+            const name = cols[idxNom] || '';
+            const rawPrix = (cols[idxPrix] || '0').replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+
+            if (name) {
+                if (!macroCategoriesMap.has(groupeName)) {
+                    macroCategoriesMap.set(groupeName, {
+                        id: generateUUID(),
+                        index: macroCategoriesMap.size
+                    });
+                }
+                const macroObj = macroCategoriesMap.get(groupeName);
+
+                if (!macroCatFamilyCounter.has(macroObj.id)) {
+                    macroCatFamilyCounter.set(macroObj.id, 0);
+                }
+
+                const catKey = `${groupeName}__${categoryName}`;
+                if (!categoriesMap.has(catKey)) {
+                    const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
+                    macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
+
+                    categoriesMap.set(catKey, {
+                        id: generateUUID(),
+                        name: categoryName,
+                        macroId: macroObj.id,
+                        indexInGroup: familyIndexInGroup,
+                        positions: []
+                    });
+                }
+                const catObj = categoriesMap.get(catKey);
+
+                const itemId = generateUUID();
+                const priceInCents = Math.round((parseFloat(rawPrix) || 0) * 100);
+                const taxId = taxMap[rawTva] || taxMap["5.50"];
+
+                parsedItems.push({
+                    "name": name,
+                    "client_id": itemId,
+                    "modular_price": false,
+                    "preparation_step_index": 1,
+                    "screen_name": null,
+                    "kitchen_name": null,
+                    "sku": null,
+                    "date_creation": nowISO,
+                    "barcode": null,
+                    "is_weight_price": false,
+                    "kilo_price": 0.0,
+                    "item_is_limodade": false,
+                    "option_categories": [],
+                    "prices": [{
+                        "client_id": generateUUID(),
+                        "name": null,
+                        "amount": priceInCents,
+                        "price_type": 0,
+                        "tax": { "client_id": taxId }
+                    }],
+                    "macro_category": { "client_id": macroObj.id },
+                    "shared_option_categories": []
+                });
+
+                catObj.positions.push({
+                    "client_id": generateUUID(),
+                    "highlight_level": 0,
+                    "brightness_level": 0,
+                    "alternate_color": -1,
+                    "index": catObj.positions.length,
+                    "item": { "client_id": itemId }
+                });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${groupeName} (Pos: ${macroObj.index + 1})</td><td>${categoryName} (Pos: ${catObj.indexInGroup + 1})</td><td><strong>${name}</strong></td><td>${parseFloat(rawPrix).toFixed(2)} €</td><td>${rawTva}%</td>`;
+                previewTableBody.appendChild(tr);
+            }
+        }
+
+        parsedMacroCategories = [];
+        macroCategoriesMap.forEach((val, gName) => {
+            parsedMacroCategories.push({
+                "client_id": val.id,
+                "name": gName,
+                "index": val.index,
+                "color": 0,
+                "image": "Fichier 9",
+                "preparation_step_index": null,
+                "number_of_categories": 8
+            });
+        });
+
+        parsedCardCategories = [];
+        categoriesMap.forEach((val) => {
+            parsedCardCategories.push({
+                "client_id": val.id,
+                "name": val.name,
+                "index": val.indexInGroup,
+                "number_of_columns": 2,
+                "number_of_lines": 8,
+                "positions": val.positions,
+                "macro_category": { "client_id": val.macroId }
+            });
+        });
+
+        previewCard.style.display = 'block';
+    }
+
+    downloadBtn.addEventListener('click', () => {
+        if (!parsedItems.length) return;
+
+        const storeName = document.getElementById('ticket_name').value.trim() || "BAGUETTE";
+        const companySiret = document.getElementById('ticket_company').value.trim();
+        const numTva = document.getElementById('ticket_tva').value.trim();
+        const codeNaf = document.getElementById('ticket_naf').value.trim();
+        const address = document.getElementById('ticket_address').value.trim();
+        const zip = document.getElementById('ticket_zip').value.trim();
+        const city = document.getElementById('ticket_city').value.trim();
+        const phone = document.getElementById('ticket_phone').value.trim();
+        const gerantCode = document.getElementById('gerant_code').value.trim() || "0000";
+        const nowISO = new Date().toISOString();
+
+        const finalJsonData = {
+            "name": storeName,
+            "locale": "fr_FR",
+            "last_update": nowISO,
+            "next_avoir_number": 0,
+            "ticket_name": storeName,
+            "ticket_address": address,
+            "ticket_text": "Champ libre",
+            "ticket_company": companySiret ? ` ${companySiret} ` : "",
+            "ticket_phone": phone,
+            "ticket_zip": zip,
+            "ticket_city": city,
+            "ticket_country": "France",
+            "ticket_url": "",
+            "ticket_naf": codeNaf ? ` ${codeNaf} ` : "",
+            "ticket_tva": numTva ? ` ${numTva}` : "",
+            "ticket_footer_note": "Merci de votre visite",
+            "ticket_image_url": "",
+            "ticket_company_name": "",
+            "setting_cut_kitchen_ticket": false,
+            "setting_only_first_kitchen_ticket": false,
+            "setting_send_preparation_on": true,
+            "setting_happy_hour_on": true,
+            "setting_detailed_report": true,
+            "setting_total_raw": false,
+            "setting_not_claim": false,
+            "setting_close_after_transmitted": true,
+            "setting_send_tills": true,
+            "setting_send_tills_live": true,
+            "setting_use_qrcode": false,
+            "setting_manual_steps_activated": true,
+            "setting_print_on_pay": true,
+            "number_of_preparation_steps": 3,
+            "setting_ask_cash_in": false,
+            "setting_group_item_kitchen": false,
+            "setting_not_claim_content": false,
+            "setting_allow_gap_till": true,
+            "setting_detailed_menus": false,
+            "setting_compact_order": false,
+            "setting_print_menu_on_preparation": false,
+            "setting_print_option_group_on_preparation": false,
+            "number_of_lines": 8,
+            "number_of_menus": 8,
+            "number_of_selections": 8,
+            "exercice_date": nowISO,
+            "macro_categories": parsedMacroCategories,
+            "taxes": [
+                { "client_id": "78de92d2-57ce-4998-8faf-364a806052ec", "name": "TVA 10%", "percentage": 1000 },
+                { "client_id": "A58D3A44-34B1-46FC-8481-8101542DA4DE", "name": "TVA 20%", "percentage": 2000 },
+                { "client_id": "3515EF97-8B72-4AEF-A3EF-8954E240D11A", "name": "TVA 5,5%", "percentage": 550 }
+            ],
+            "shared_option_categories": [],
+            "payment_methods": [
+                { "client_id": generateUUID(), "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
+                { "client_id": generateUUID(), "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false }
+            ],
+            "items": parsedItems,
+            "printers": [],
+            "places": [],
+            "place_printer_links": [],
+            "cards": [{
+                "client_id": generateUUID(),
+                "name": "Carte",
+                "categories": parsedCardCategories,
+                "selections": [],
+                "menus": []
+            }],
+            "people": [
+                {
+                    "client_id": "4AC6F559-74DB-45ED-AAB8-14B9DAAC6851",
+                    "name": "Gérant",
+                    "password": gerantCode,
+                    "pass_key": gerantCode,
+                    "is_root": true,
+                    "right_person": true,
+                    "right_till": true,
+                    "right_report": true,
+                    "right_all_orders": true,
+                    "right_apply_discount": true,
+                    "right_edit_discount": true,
+                    "right_delete_order": null,
+                    "right_cancel_order": true,
+                    "right_stats_till": true,
+                    "right_card": true,
+                    "right_device": true,
+                    "right_custom_price": true,
+                    "right_payment_type": true,
+                    "right_payment_order": false,
+                    "qrcode": null,
+                    "key_dallas": null,
+                    "color_blind_mode_on": false,
+                    "right_automatic_cash_drawer": true,
+                    "right_full_stats": true,
+                    "right_happy_hour": true,
+                    "right_payed_customer": true,
+                    "right_client": true,
+                    "right_manual_cash_drawer": true,
+                    "right_ownership": true,
+                    "right_edit_price_type": true,
+                    "right_transfer_order": true,
+                    "right_cancel_order_after_note": true,
+                    "right_edit_justificatif": true,
+                    "right_update_order_after_note": true
+                }
+            ],
+            "rooms": [],
+            "stock": [],
+            "discounts": [],
+            "price_types": [
+                { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
+            ],
+            "cash_movement_motifs": [],
+            "third_parties": [],
+            "bookings": [],
+            "customers": []
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "programmation") + "_popina.json";
+        downloadAnchor.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    });
+</script>
+</body>
+</html>
