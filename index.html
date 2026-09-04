@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Convertisseur CSV vers JSON Popina</title>
+    <title>Convertisseur CSV vers JSON Popina (Nouveau Back-Office)</title>
     <style>
         :root {
             --primary: #e63946;
@@ -36,6 +36,16 @@
         h1 {
             color: var(--primary);
             margin-bottom: 0.5rem;
+        }
+
+        .badge-new {
+            background-color: #2563eb;
+            color: white;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            vertical-align: middle;
+            margin-left: 0.5rem;
         }
 
         .card {
@@ -152,8 +162,8 @@
 
 <div class="container">
     <header>
-        <h1>Convertisseur CSV ➔ JSON Popina</h1>
-        <p>Renseignez vos informations puis déposez votre fichier CSV.</p>
+        <h1>Convertisseur Popina <span class="badge-new">Nouveau BO</span> <span style="font-size:0.6em; color:#64748b; font-weight:normal;">by cyp</span></h1>
+        <p>Générez votre fichier JSON conforme au nouveau Back-Office de Popina.</p>
     </header>
 
     <!-- Informations Établissement -->
@@ -195,6 +205,10 @@
                 <label for="ticket_phone">Téléphone</label>
                 <input type="text" id="ticket_phone" placeholder="Ex: 01 23 45 67 89">
             </div>
+            <div class="form-group">
+                <label for="gerant_code">Code vendeur (Gérant)</label>
+                <input type="text" id="gerant_code" value="0000">
+            </div>
         </div>
     </div>
 
@@ -225,7 +239,7 @@
             </table>
         </div>
 
-        <button class="btn" id="downloadBtn">Télécharger le JSON Popina</button>
+        <button class="btn" id="downloadBtn">Télécharger le JSON Nouveau BO Popina</button>
     </div>
 </div>
 
@@ -247,18 +261,13 @@
         
         if (!companyField) return;
 
-        // Extraction de tous les chiffres
         const digits = companyField.value.replace(/\D/g, '');
 
         if (digits.length >= 9) {
-            // Prendre les 9 premiers chiffres (numéro SIREN)
             const sirenStr = digits.substring(0, 9);
             const sirenNum = parseInt(sirenStr, 10);
-            
-            // Formule officielle : (12 + 3 * (SIREN mod 97)) mod 97
             const cle = (12 + 3 * (sirenNum % 97)) % 97;
             const cleStr = cle < 10 ? '0' + cle : '' + cle;
-            
             tvaField.value = `FR${cleStr}${sirenStr}`;
         } else {
             alert('Veuillez d\'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.');
@@ -348,6 +357,7 @@
         };
 
         previewTableBody.innerHTML = '';
+        const nowISO = new Date().toISOString();
 
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
@@ -396,7 +406,10 @@
                     "client_id": itemId,
                     "modular_price": false,
                     "preparation_step_index": 1,
-                    "date_creation": new Date().toISOString().replace('T', ' ').substring(0, 19) + " +0100",
+                    "screen_name": null,
+                    "kitchen_name": null,
+                    "sku": null,
+                    "date_creation": nowISO,
                     "barcode": null,
                     "is_weight_price": false,
                     "kilo_price": 0.0,
@@ -415,6 +428,9 @@
 
                 catObj.positions.push({
                     "client_id": generateUUID(),
+                    "highlight_level": 0,
+                    "brightness_level": 0,
+                    "alternate_color": -1,
                     "index": catObj.positions.length,
                     "item": { "client_id": itemId }
                 });
@@ -465,14 +481,17 @@
         const zip = document.getElementById('ticket_zip').value.trim();
         const city = document.getElementById('ticket_city').value.trim();
         const phone = document.getElementById('ticket_phone').value.trim();
+        const gerantCode = document.getElementById('gerant_code').value.trim() || "0000";
+        const nowISO = new Date().toISOString();
 
         const finalJsonData = {
             "name": storeName,
             "locale": "fr_FR",
-            "last_update": new Date().toISOString().replace('T', ' ').substring(0, 19) + " +0100",
+            "last_update": nowISO,
             "next_avoir_number": 0,
             "ticket_name": storeName,
             "ticket_address": address,
+            "ticket_text": "Champ libre",
             "ticket_company": companySiret ? ` ${companySiret} ` : "",
             "ticket_phone": phone,
             "ticket_zip": zip,
@@ -481,30 +500,112 @@
             "ticket_url": "",
             "ticket_naf": codeNaf ? ` ${codeNaf} ` : "",
             "ticket_tva": numTva ? ` ${numTva}` : "",
+            "ticket_footer_note": "Merci de votre visite",
+            "ticket_image_url": "",
+            "ticket_company_name": "",
+            "setting_cut_kitchen_ticket": false,
+            "setting_only_first_kitchen_ticket": false,
+            "setting_send_preparation_on": true,
+            "setting_happy_hour_on": true,
+            "setting_detailed_report": true,
+            "setting_total_raw": false,
+            "setting_not_claim": false,
+            "setting_close_after_transmitted": true,
+            "setting_send_tills": true,
+            "setting_send_tills_live": true,
+            "setting_use_qrcode": false,
+            "setting_manual_steps_activated": true,
+            "setting_print_on_pay": true,
+            "number_of_preparation_steps": 3,
+            "setting_ask_cash_in": false,
+            "setting_group_item_kitchen": false,
+            "setting_not_claim_content": false,
+            "setting_allow_gap_till": true,
+            "setting_detailed_menus": false,
+            "setting_compact_order": false,
+            "setting_print_menu_on_preparation": false,
+            "setting_print_option_group_on_preparation": false,
+            "number_of_lines": 8,
+            "number_of_menus": 8,
+            "number_of_selections": 8,
+            "exercice_date": nowISO,
             "macro_categories": parsedMacroCategories,
             "taxes": [
                 { "client_id": "78de92d2-57ce-4998-8faf-364a806052ec", "name": "TVA 10%", "percentage": 1000 },
                 { "client_id": "A58D3A44-34B1-46FC-8481-8101542DA4DE", "name": "TVA 20%", "percentage": 2000 },
                 { "client_id": "3515EF97-8B72-4AEF-A3EF-8954E240D11A", "name": "TVA 5,5%", "percentage": 550 }
             ],
+            "shared_option_categories": [],
             "payment_methods": [
                 { "client_id": generateUUID(), "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
                 { "client_id": generateUUID(), "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false }
             ],
             "items": parsedItems,
+            "printers": [],
+            "places": [],
+            "place_printer_links": [],
             "cards": [{
                 "client_id": generateUUID(),
                 "name": "Carte",
                 "categories": parsedCardCategories,
                 "selections": [],
                 "menus": []
-            }]
+            }],
+            "people": [
+                {
+                    "client_id": "4AC6F559-74DB-45ED-AAB8-14B9DAAC6851",
+                    "name": "Gérant",
+                    "password": gerantCode,
+                    "pass_key": gerantCode,
+                    "is_root": true,
+                    "right_person": true,
+                    "right_till": true,
+                    "right_report": true,
+                    "right_all_orders": true,
+                    "right_apply_discount": true,
+                    "right_edit_discount": true,
+                    "right_delete_order": null,
+                    "right_cancel_order": true,
+                    "right_stats_till": true,
+                    "right_card": true,
+                    "right_device": true,
+                    "right_custom_price": true,
+                    "right_payment_type": true,
+                    "right_payment_order": false,
+                    "qrcode": null,
+                    "key_dallas": null,
+                    "color_blind_mode_on": false,
+                    "right_automatic_cash_drawer": true,
+                    "right_full_stats": true,
+                    "right_happy_hour": true,
+                    "right_payed_customer": true,
+                    "right_client": true,
+                    "right_manual_cash_drawer": true,
+                    "right_ownership": true,
+                    "right_edit_price_type": true,
+                    "right_transfer_order": true,
+                    "right_cancel_order_after_note": true,
+                    "right_edit_justificatif": true,
+                    "right_update_order_after_note": true
+                }
+            ],
+            "rooms": [],
+            "stock": [],
+            "discounts": [],
+            "price_types": [
+                { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
+            ],
+            "cash_movement_motifs": [],
+            "third_parties": [],
+            "bookings": [],
+            "customers": []
         };
 
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
         const downloadAnchor = document.createElement('a');
         downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute("download", "programmation_popina.json");
+        const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "programmation") + "_popina.json";
+        downloadAnchor.setAttribute("download", fileName);
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
