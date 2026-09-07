@@ -254,7 +254,6 @@
     let parsedCardCategories = [];
     let parsedMacroCategories = [];
 
-    // Fonction de calcul de la TVA Intracommunautaire
     function calculerTVA() {
         const companyField = document.getElementById('ticket_company');
         const tvaField = document.getElementById('ticket_tva');
@@ -484,7 +483,25 @@
         const gerantCode = document.getElementById('gerant_code').value.trim() || "0000";
         const nowISO = new Date().toISOString();
 
-        const defaultRooms = [
+        const targetPaymentMethods = [
+            { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
+            { "client_id": "F0CC63FF-2E20-40A4-B1B1-27C02177D63D", "name": "Mews", "mode": 11, "index": 9, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "F3DD06FF-71CE-4800-92C7-BAFCF6D3A5E7", "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
+            { "client_id": "9DD1C2C1-A0B5-436B-88DF-A9145227D555", "name": "Deliveroo", "mode": 15, "index": 12, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "AFEA6F7D-3697-4BE3-BD94-372B046F483A", "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "0E59B53C-1D23-419D-8ECC-1ED878E82866", "name": "Chèque", "mode": 3, "index": 3, "enabled": true, "change": false, "drawer": true, "should_print": false },
+            { "client_id": "D74176CF-FFD8-428F-BCCB-43A71D820853", "name": "Avoir", "mode": 5, "index": 5, "enabled": true, "change": false, "drawer": true, "should_print": true },
+            { "client_id": "8E54A99A-A9E8-4B15-A400-AE81092CEF8B", "name": "Uber eats", "mode": 13, "index": 7, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "18652D17-5826-4B84-9E97-673C8B5CD54B", "name": "American Express", "mode": 4, "index": 4, "enabled": true, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "6DDFB5C7-C1B1-43A9-979A-6ADAC3808042", "name": "Resto Flash", "mode": 10, "index": 8, "enabled": false, "change": false, "drawer": true, "should_print": false },
+            { "client_id": "D3158781-53BE-40C4-BFF3-B596A421F34A", "name": "Foxorder", "mode": 9, "index": 6, "enabled": false, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "2528fdb4-7c79-42e9-955d-22310dcc39c7", "name": "iZettle", "mode": 7, "index": 11, "enabled": false, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "B7D76868-5AF6-46E6-BCFD-DD33CA69A739", "name": "Compte client", "mode": 8, "index": 10, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "B97D0350-92BF-4480-9B08-2ECDBCB11ED8", "name": "Cagnotte", "mode": 14, "index": 11, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "a11686af-2507-4104-bba8-141f5bfd7682", "name": "Virement", "mode": 20, "index": 15, "enabled": false, "change": true, "drawer": true, "should_print": false }
+        ];
+
+        const targetRooms = [
             {
                 "client_id": "B9465AAF-B7FB-4B16-A664-8FE3AD4BA4B4",
                 "name": "A emporter",
@@ -503,7 +520,7 @@
                 "setting_logout_on_transmit": false,
                 "number_of_additional_note_prints": 0,
                 "should_display_owner_on_table": true,
-                "setting_logout_on_payment": true,
+                "setting_logout_on_payment": false,
                 "should_send_to_preparation_on_close": true,
                 "tables": []
             },
@@ -525,7 +542,7 @@
                 "setting_logout_on_transmit": false,
                 "number_of_additional_note_prints": 0,
                 "should_display_owner_on_table": true,
-                "setting_logout_on_payment": true,
+                "setting_logout_on_payment": false,
                 "should_send_to_preparation_on_close": true,
                 "tables": [
                     { "client_id": "58B4F9D3-0EE0-4699-8D50-DB37B6E20B69", "name": "6", "shape": 0, "position_x": 234, "position_y": 234, "date_creation": nowISO },
@@ -556,7 +573,7 @@
                 "setting_logout_on_transmit": false,
                 "number_of_additional_note_prints": 0,
                 "should_display_owner_on_table": true,
-                "setting_logout_on_payment": true,
+                "setting_logout_on_payment": false,
                 "should_send_to_preparation_on_close": true,
                 "tables": []
             },
@@ -600,7 +617,7 @@
                 "setting_logout_on_transmit": false,
                 "number_of_additional_note_prints": 0,
                 "should_display_owner_on_table": true,
-                "setting_logout_on_payment": true,
+                "setting_logout_on_payment": false,
                 "should_send_to_preparation_on_close": true,
                 "tables": []
             },
@@ -622,10 +639,42 @@
                 "setting_logout_on_transmit": false,
                 "number_of_additional_note_prints": 0,
                 "should_display_owner_on_table": true,
-                "setting_logout_on_payment": true,
+                "setting_logout_on_payment": false,
                 "should_send_to_preparation_on_close": true,
                 "tables": []
+            },
+            {
+                "client_id": "af05251b-9a05-4eaa-ba3e-e8ca8b731f78",
+                "name": "Livraison",
+                "type": 3,
+                "price_type": 0,
+                "index": 7,
+                "enabled": false,
+                "date_creation": nowISO,
+                "setting_ask_number_guests": false,
+                "setting_close_after_paid": null,
+                "setting_payment_method_shortcut": null,
+                "setting_new_order_after_paid": false,
+                "setting_open_payment_on_printing": null,
+                "setting_transmit_on_payment": false,
+                "bippers_activated": false,
+                "setting_logout_on_transmit": false,
+                "number_of_additional_note_prints": 0,
+                "should_display_owner_on_table": false,
+                "setting_logout_on_payment": false,
+                "should_send_to_preparation_on_close": false,
+                "tables": []
             }
+        ];
+
+        const targetPriceTypes = [
+            { "client_id": "E6D99B0E-0145-40DF-941A-FA1C2F1AE554", "name": "A emporter", "price_type": 3, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "AFD68C4B-66DF-408A-BD10-3966970B355B", "name": "Comptoir", "price_type": 2, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "B1F8F670-2753-406B-88E7-5DA7C991A203", "name": "Happy Hour", "price_type": 1, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "98E1BF35-D34E-400B-9536-C27F7BCA7E92", "name": "Prix Spécial", "price_type": 5, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "4C80E382-C753-4C6C-9CFF-B208A055DC12", "name": "Prix au poids (Kg)", "price_type": 6, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "A0864129-2860-4B51-9CDC-81A208B51368", "name": "Terrasse", "price_type": 4, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
         ];
 
         const finalJsonData = {
@@ -645,8 +694,8 @@
             "ticket_naf": codeNaf ? ` ${codeNaf} ` : "",
             "ticket_tva": numTva ? ` ${numTva}` : "",
             "ticket_footer_note": "Merci de votre visite",
-            "ticket_image_url": "",
-            "ticket_company_name": "",
+            "ticket_image_url": "https://firebasestorage.googleapis.com:443/v0/b/jalia-prod.appspot.com/o/ticket-13.jpg?alt=media&token=a74ec29d-bda3-4a1e-8fcb-46e6dc2a7138",
+            "ticket_company_name": storeName,
             "setting_cut_kitchen_ticket": false,
             "setting_only_first_kitchen_ticket": false,
             "setting_send_preparation_on": true,
@@ -662,11 +711,11 @@
             "setting_print_on_pay": true,
             "number_of_preparation_steps": 3,
             "setting_ask_cash_in": false,
-            "setting_group_item_kitchen": false,
+            "setting_group_item_kitchen": true,
             "setting_not_claim_content": false,
             "setting_allow_gap_till": true,
             "setting_detailed_menus": false,
-            "setting_compact_order": false,
+            "setting_compact_order": true,
             "setting_print_menu_on_preparation": false,
             "setting_print_option_group_on_preparation": false,
             "number_of_lines": 8,
@@ -679,14 +728,28 @@
                 { "client_id": "A58D3A44-34B1-46FC-8481-8101542DA4DE", "name": "TVA 20%", "percentage": 2000 },
                 { "client_id": "3515EF97-8B72-4AEF-A3EF-8954E240D11A", "name": "TVA 5,5%", "percentage": 550 }
             ],
-            "shared_option_categories": [],
-            "payment_methods": [
-                { "client_id": generateUUID(), "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
-                { "client_id": generateUUID(), "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false }
+            "shared_option_categories": [
+                {
+                    "client_id": "ED23B5F8-81DD-41A1-8B9C-A8F01C65AB14",
+                    "index": 1,
+                    "name": "Cuisson",
+                    "is_mandatory": true,
+                    "is_multiple": false,
+                    "options": [
+                        { "client_id": "EF48D84E-A6F3-4FCE-A1BD-ABA2C5688D97", "index": 2, "name": "À Point", "price": 0 },
+                        { "client_id": "80366CCF-AE4B-46B4-BA00-E5B1624385AD", "index": 0, "name": "Bleu", "price": 0 },
+                        { "client_id": "8FF46C2F-0BCF-4202-A8CE-1C80762A6A1D", "index": 1, "name": "Saignant", "price": 0 },
+                        { "client_id": "F7CDCA4E-8966-4583-88C1-E811F6147E2A", "index": 3, "name": "Bien cuit", "price": 0 }
+                    ]
+                }
             ],
+            "payment_methods": targetPaymentMethods,
             "items": parsedItems,
             "printers": [],
-            "places": [],
+            "places": [
+                { "client_id": "5F6F94EC-19FE-44DA-B5AF-89894AC340E4", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
+                { "client_id": "CBC89272-5DC4-4E60-B2E4-A0650E41822F", "creation_date": nowISO, "name": "Bar", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] }
+            ],
             "place_printer_links": [],
             "cards": [{
                 "client_id": generateUUID(),
@@ -715,7 +778,7 @@
                     "right_device": true,
                     "right_custom_price": true,
                     "right_payment_type": true,
-                    "right_payment_order": false,
+                    "right_payment_order": true,
                     "qrcode": null,
                     "key_dallas": null,
                     "color_blind_mode_on": false,
@@ -733,12 +796,12 @@
                     "right_update_order_after_note": true
                 }
             ],
-            "rooms": defaultRooms,
+            "rooms": targetRooms,
             "stock": [],
-            "discounts": [],
-            "price_types": [
-                { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
+            "discounts": [
+                { "client_id": "7BD93B09-2744-4018-9FDB-95A96F323FE3", "amount": 10000, "name": "Offert", "discount_type": 1, "index": 0, "date_creation": nowISO, "apply_on_units": false }
             ],
+            "price_types": targetPriceTypes,
             "cash_movement_motifs": [],
             "third_parties": [],
             "bookings": [],
