@@ -569,12 +569,14 @@
         const gerantCode = sanitizeName(document.getElementById('gerant_code').value) || "0000";
         const nowISO = new Date().toISOString();
 
-        const taxMap = {
-            "10": "78de92d2-57ce-4998-8faf-364a806052ec",
-            "20": "A58D3A44-34B1-46FC-8481-8101542DA4DE",
-            "5.5": "3515EF97-8B72-4AEF-A3EF-8954E240D11A",
-            "5.50": "3515EF97-8B72-4AEF-A3EF-8954E240D11A"
-        };
+        function resolveTaxId(tvaInput) {
+            const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
+            if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Défaut 20%
+            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // TVA 20%
+            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec"; // TVA 10%
+            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A"; // TVA 5.5%
+            return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Fallback 20%
+        }
 
         const macroCategoriesMap = new Map();
         const categoriesMap = new Map();
@@ -608,7 +610,7 @@
 
             const itemId = generateUUID();
             const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
-            const taxId = taxMap[String(row.tva)] || taxMap["5.50"];
+            const taxId = resolveTaxId(row.tva);
 
             finalItems.push({
                 "name": row.name,
@@ -1247,7 +1249,7 @@
     // --- TELECHARGEMENT AVEC BOM UTF-8 (\uFEFF) ---
     function downloadCsv(content, filename) {
         const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
+        const link = document.append ? document.createElement("a") : document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
         link.setAttribute("download", filename);
