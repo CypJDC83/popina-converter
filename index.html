@@ -572,9 +572,9 @@
         function resolveTaxId(tvaInput) {
             const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
             if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Défaut 20%
-            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // TVA 20%
-            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec"; // TVA 10%
-            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A"; // TVA 5.5%
+            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // TVA 20% (HO BIBLIO)
+            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec"; // TVA 10% (HO BIBLIO)
+            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A"; // TVA 5.5% (HO BIBLIO)
             return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Fallback 20%
         }
 
@@ -681,7 +681,7 @@
             { "client_id": "AFEA6F7D-3697-4BE3-BD94-372B046F483A", "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false },
             { "client_id": "0E59B53C-1D23-419D-8ECC-1ED878E82866", "name": "Chèque", "mode": 3, "index": 3, "enabled": true, "change": false, "drawer": true, "should_print": false },
             { "client_id": "D74176CF-FFD8-428F-BCCB-43A71D820853", "name": "Avoir", "mode": 5, "index": 5, "enabled": true, "change": false, "drawer": true, "should_print": true },
-            { "client_id": "8E54A99A-A998-4B15-A400-AE81092CEF8B", "name": "Uber eats", "mode": 13, "index": 7, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "8E54A99A-A9E8-4B15-A400-AE81092CEF8B", "name": "Uber eats", "mode": 13, "index": 7, "enabled": false, "change": false, "drawer": false, "should_print": false },
             { "client_id": "18652D17-5826-4B84-9E97-673C8B5CD54B", "name": "American Express", "mode": 4, "index": 4, "enabled": true, "change": true, "drawer": false, "should_print": false },
             { "client_id": "6DDFB5C7-C1B1-43A9-979A-6ADAC3808042", "name": "Resto Flash", "mode": 10, "index": 8, "enabled": false, "change": false, "drawer": true, "should_print": false },
             { "client_id": "D3158781-53BE-40C4-BFF3-B596A421F34A", "name": "Foxorder", "mode": 9, "index": 6, "enabled": false, "change": true, "drawer": false, "should_print": false },
@@ -720,7 +720,6 @@
             { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
         ];
 
-        // FIX : Orthographe exacte shloud_print_all_items attendue par le schema Popina
         const finalJsonData = {
             "name": storeName,
             "locale": "fr_FR",
@@ -788,7 +787,7 @@
                 }
             ],
             "payment_methods": targetPaymentMethods,
-            "items": finalItems,
+            "items": parsedItems,
             "printers": [],
             "places": [
                 { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
@@ -860,10 +859,10 @@
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
-        log('logJson', `Fichier ${fileName} généré et téléchargé.`);
     });
 
-    // --- SCRIPT 2 : NOVA VERS CSV POPINA ---
+
+    // --- SCRIPT 2 : CAISSE NOVA VERS CSV POPINA ---
     const dropZoneNova = document.getElementById('dropZoneNova');
     const fileInputNova = document.getElementById('fileInputNova');
     const novaStatus = document.getElementById('novaStatus');
@@ -883,38 +882,31 @@
     function handleFileNova(file) {
         novaStatus.className = 'status';
         novaStatus.textContent = "Traitement en cours...";
-        log('logNova', `Lecture du fichier Nova ${file.name}...`);
 
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                let text = e.target.result;
-                if (text.includes('Ã©') || text.includes('Ã¨') || text.includes('Ã')) {
-                    log('logNova', 'Basculement sur l\'encodage ISO-8859-1...');
-                    const readerIso = new FileReader();
-                    readerIso.onload = function(evt) {
-                        executeNovaProcess(evt.target.result);
-                    };
-                    readerIso.readAsText(file, 'ISO-8859-1');
-                } else {
-                    executeNovaProcess(text);
-                }
+                const text = e.target.result;
+                const result = processNovaToPopina(text);
+                downloadCsv(result.csv, "prog_popina_converti.csv");
+                novaStatus.className = 'status success';
+                novaStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
             } catch (err) {
                 console.error(err);
                 novaStatus.className = 'status error';
                 novaStatus.textContent = "Erreur lors de la conversion du fichier.";
-                log('logNova', `❌ Erreur : ${err.message}`);
             }
         };
-        reader.readAsText(file, 'UTF-8');
+        reader.readAsText(file, 'ISO-8859-1');
     }
 
-    function executeNovaProcess(text) {
-        const result = processNovaToPopina(text);
-        downloadCsv(result.csv, "prog_popina_converti.csv");
-        novaStatus.className = 'status success';
-        novaStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
-        log('logNova', `Conversion terminée: ${result.count} articles exportés.`);
+    function sanitizeName(str) {
+        if (!str) return "";
+        let clean = String(str).trim();
+        if (clean.length > 254) {
+            clean = clean.substring(0, 254);
+        }
+        return clean;
     }
 
     function formatNumber(val) {
@@ -927,27 +919,45 @@
     function getTvaValue(taxCode) {
         const code = String(taxCode).trim();
         switch (code) {
+            case "1": return 10.0; // Code 1 dans Nova = TVA 10%
+            case "2": return 20.0; // Code 2 dans Nova = TVA 20%
+            case "3": return 5.5;  // Code 3 dans Nova = TVA 5.5%
+            case "4": return 0.0;  // Code 4 dans Nova = Exonéré 0%
             case "0": return 10.0;
-            case "1": return 20.0;
-            case "2": return 5.5;
-            case "3": return 0.0;
             default: return 20.0;
         }
     }
 
     function processNovaToPopina(content) {
         const lines = content.split(/\r?\n/);
-        let groups = {}, depts = {}, rawArticles = [], disabledCount = 0, currentSection = "";
+        
+        let groups = {};
+        let depts = {};
+        let rawArticles = [];
+        let disabledCount = 0;
+
+        let currentSection = "";
 
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
 
-            if (line.startsWith('G;DESC;')) { currentSection = "G"; continue; }
-            else if (line.startsWith('D;TYPE;')) { currentSection = "D"; continue; }
-            else if (line.startsWith('A;TYPE;')) { currentSection = "A"; continue; }
+            if (line.startsWith('G;DESC;')) {
+                currentSection = "G";
+                continue;
+            } else if (line.startsWith('D;TYPE;')) {
+                currentSection = "D";
+                continue;
+            } else if (line.startsWith('A;TYPE;')) {
+                currentSection = "A";
+                continue;
+            } else if (line.startsWith('FM;') || line.startsWith('FIX;') || line.startsWith('W;') || line.startsWith('WPROF;') || line.startsWith('S;') || line.startsWith('M;') || line.startsWith('K;') || line.startsWith('C;') || line.startsWith('CU;') || line.startsWith('DOC;')) {
+                currentSection = "OTHER";
+                continue;
+            }
 
             const parts = line.split(';');
+
             if (currentSection === "G" && parts.length > 1) {
                 groups[parts[0]] = parts[1];
             } else if (currentSection === "D" && parts.length > 9) {
@@ -958,8 +968,8 @@
                 const tax2Code = parts[3];
                 const name = parts[19];
                 const groupId = parts[20];
-                const price1 = parseFloat(parts[27]?.replace(',', '.')) || 0;
-                const price2 = parseFloat(parts[28]?.replace(',', '.')) || 0;
+                const price1 = parseFloat(parts[27].replace(',', '.')) || 0;
+                const price2 = parseFloat(parts[28].replace(',', '.')) || 0;
                 const deptId = parts[71];
 
                 if (disabled === "1" || !name || name === "0" || name.length < 2) {
@@ -967,49 +977,69 @@
                     continue;
                 }
 
+                const tvaSurPlace = getTvaValue(tax1Code);
+                const tvaEmporter = getTvaValue(tax2Code);
+
                 rawArticles.push({
                     name: sanitizeName(name),
                     groupId: groupId,
                     deptId: deptId,
                     priceSurPlace: price1,
-                    tvaSurPlace: getTvaValue(tax1Code),
+                    tvaSurPlace: tvaSurPlace,
                     priceEmporter: price2 > 0 ? price2 : "",
-                    tvaEmporter: price2 > 0 ? getTvaValue(tax2Code) : ""
+                    tvaEmporter: price2 > 0 ? tvaEmporter : ""
                 });
             }
         }
 
         let popinaTree = {};
+
         for (let art of rawArticles) {
+            // Résolution dynamique : nom mappé d'abord, sinon texte direct de la colonne
             let rawCat = groups[art.groupId] || art.groupId || "DIVERS";
             let rawSub = depts[art.deptId] || art.deptId || rawCat;
 
-            let catName = sanitizeName(rawCat) || "DIVERS";
-            let subCatName = sanitizeName(rawSub) || catName;
+            let catName = sanitizeName(rawCat);
+            let subCatName = sanitizeName(rawSub);
+
+            if (!catName || catName === "0") catName = "DIVERS";
+            if (!subCatName || subCatName === "0") subCatName = catName;
 
             if (!popinaTree[catName]) {
                 if (Object.keys(popinaTree).length >= 13) {
-                    catName = Object.keys(popinaTree)[12];
+                    let keys = Object.keys(popinaTree);
+                    catName = keys[12];
                 } else {
                     popinaTree[catName] = { subCats: {} };
                 }
             }
+
             let catObj = popinaTree[catName];
 
             if (!catObj.subCats[subCatName]) {
-                if (Object.keys(catObj.subCats).length >= 15) {
-                    subCatName = Object.keys(catObj.subCats)[14];
+                let currentSubCatCount = Object.keys(catObj.subCats).length;
+                if (currentSubCatCount >= 15) {
+                    let subKeys = Object.keys(catObj.subCats);
+                    subCatName = subKeys[14];
                 } else {
                     catObj.subCats[subCatName] = [];
                 }
             }
+
             catObj.subCats[subCatName].push(art);
         }
 
         const popinaHeader = [
-            "Sous-catégorie (Famille)", "Sous-catégorie (Famille).1", "Description (Nom article)",
-            "Prix Sur place (Prix 1)", "TVA Sur place", "Prix Emporter (Prix 2)",
-            "TVA Emporter", "Prix Spécial (Happy Hour)", "TVA Spécial", "Code-Barres"
+            "Sous-catégorie (Famille)",
+            "Sous-catégorie (Famille).1",
+            "Description (Nom article)",
+            "Prix Sur place (Prix 1)",
+            "TVA Sur place",
+            "Prix Emporter (Prix 2)",
+            "TVA Emporter",
+            "Prix Spécial (Happy Hour)",
+            "TVA Spécial",
+            "Code-Barres"
         ];
 
         let csvRows = [popinaHeader.join(';')];
@@ -1020,15 +1050,20 @@
             for (let sName in subCats) {
                 let itemArray = subCats[sName];
                 let chunkSize = 48;
+
                 for (let i = 0; i < itemArray.length; i += chunkSize) {
                     let chunk = itemArray.slice(i, i + chunkSize);
                     let currentSubCatTitle = (i === 0) ? sName : sanitizeName(`${sName} ${Math.floor(i / chunkSize) + 1}`);
 
                     for (let item of chunk) {
                         let row = [
-                            `"${cName}"`, `"${currentSubCatTitle}"`, `"${item.name}"`,
-                            formatNumber(item.priceSurPlace), formatNumber(item.tvaSurPlace),
-                            formatNumber(item.priceEmporter), formatNumber(item.tvaEmporter),
+                            `"${cName}"`,
+                            `"${currentSubCatTitle}"`,
+                            `"${item.name}"`,
+                            formatNumber(item.priceSurPlace),
+                            formatNumber(item.tvaSurPlace),
+                            formatNumber(item.priceEmporter),
+                            formatNumber(item.tvaEmporter),
                             "", "", ""
                         ];
                         csvRows.push(row.join(';'));
@@ -1038,10 +1073,15 @@
             }
         }
 
-        return { csv: csvRows.join('\r\n'), count: totalExportedCount, disabledCount: disabledCount };
+        return {
+            csv: csvRows.join('\r\n'),
+            count: totalExportedCount,
+            disabledCount: disabledCount
+        };
     }
 
-    // --- SCRIPT 3 : NOVA VERS SMARTTDE ---
+
+    // --- SCRIPT 3 : CAISSE NOVA VERS CSV SMART-TDE ---
     const dropZoneTde = document.getElementById('dropZoneTde');
     const fileInputTde = document.getElementById('fileInputTde');
     const tdeStatus = document.getElementById('tdeStatus');
@@ -1061,53 +1101,54 @@
     function handleFileTde(file) {
         tdeStatus.className = 'status';
         tdeStatus.textContent = "Traitement en cours...";
-        log('logTde', `Lecture du fichier TDE ${file.name}...`);
 
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                let text = e.target.result;
-                if (text.includes('Ã©') || text.includes('Ã¨') || text.includes('Ã')) {
-                    log('logTde', 'Basculement sur l\'encodage ISO-8859-1...');
-                    const readerIso = new FileReader();
-                    readerIso.onload = function(evt) {
-                        executeTdeProcess(evt.target.result);
-                    };
-                    readerIso.readAsText(file, 'ISO-8859-1');
-                } else {
-                    executeTdeProcess(text);
-                }
+                const text = e.target.result;
+                const result = processNovaToTDE(text);
+                downloadCsv(result.csv, "prog_smartTDE_converti.csv");
+                tdeStatus.className = 'status success';
+                tdeStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) au format SmartTDE (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
             } catch (err) {
                 console.error(err);
                 tdeStatus.className = 'status error';
                 tdeStatus.textContent = "Erreur lors de la conversion du fichier.";
-                log('logTde', `❌ Erreur : ${err.message}`);
             }
         };
-        reader.readAsText(file, 'UTF-8');
-    }
-
-    function executeTdeProcess(text) {
-        const result = processNovaToTDE(text);
-        downloadCsv(result.csv, "prog_smartTDE_converti.csv");
-        tdeStatus.className = 'status success';
-        tdeStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
-        log('logTde', `Conversion TDE terminée : ${result.count} articles.`);
+        reader.readAsText(file, 'ISO-8859-1');
     }
 
     function processNovaToTDE(content) {
         const lines = content.split(/\r?\n/);
-        let groups = {}, depts = {}, articles = [], disabledCount = 0, currentSection = "";
+        
+        let groups = {};
+        let depts = {};
+        let articles = [];
+        let disabledCount = 0;
+
+        let currentSection = "";
 
         for (let line of lines) {
             line = line.trim();
             if (!line) continue;
 
-            if (line.startsWith('G;DESC;')) { currentSection = "G"; continue; }
-            else if (line.startsWith('D;TYPE;')) { currentSection = "D"; continue; }
-            else if (line.startsWith('A;TYPE;')) { currentSection = "A"; continue; }
+            if (line.startsWith('G;DESC;')) {
+                currentSection = "G";
+                continue;
+            } else if (line.startsWith('D;TYPE;')) {
+                currentSection = "D";
+                continue;
+            } else if (line.startsWith('A;TYPE;')) {
+                currentSection = "A";
+                continue;
+            } else if (line.startsWith('FM;') || line.startsWith('FIX;') || line.startsWith('W;') || line.startsWith('WPROF;') || line.startsWith('S;') || line.startsWith('M;') || line.startsWith('K;') || line.startsWith('C;') || line.startsWith('CU;') || line.startsWith('DOC;')) {
+                currentSection = "OTHER";
+                continue;
+            }
 
             const parts = line.split(';');
+
             if (currentSection === "G" && parts.length > 1) {
                 groups[parts[0]] = parts[1];
             } else if (currentSection === "D" && parts.length > 9) {
@@ -1116,8 +1157,8 @@
                 const disabled = parts[9];
                 const name = parts[19];
                 const groupId = parts[20];
-                const price1 = parseFloat(parts[27]?.replace(',', '.')) || 0;
-                const price2 = parseFloat(parts[28]?.replace(',', '.')) || 0;
+                const price1 = parseFloat(parts[27].replace(',', '.')) || 0;
+                const price2 = parseFloat(parts[28].replace(',', '.')) || 0;
                 const deptId = parts[71];
 
                 if (disabled === "1" || !name || name === "0" || name.length < 2) {
@@ -1125,16 +1166,20 @@
                     continue;
                 }
 
-                let rawGroup = sanitizeName(groups[groupId] || groupId || "DIVERS").replace(/;/g, ' ');
-                let rawDept = sanitizeName(depts[deptId] || deptId || rawGroup).replace(/;/g, ' ');
-                const cleanName = sanitizeName(name).replace(/;/g, ' ');
+                let rawGroup = (groups[groupId] || groupId || "DIVERS").replace(/;/g, ' ').trim();
+                let rawDept = (depts[deptId] || deptId || rawGroup).replace(/;/g, ' ').trim();
+
+                if (!rawGroup || rawGroup === "0") rawGroup = "DIVERS";
+                if (!rawDept || rawDept === "0") rawDept = rawGroup;
+
+                const cleanName = name.replace(/;/g, ' ').trim();
 
                 const p1Cents = Math.round(price1 * 100);
                 const p2Cents = price2 > 0 ? Math.round(price2 * 100) : "";
 
                 articles.push({
-                    group: rawGroup || "DIVERS",
-                    dept: rawDept || rawGroup || "DIVERS",
+                    group: rawGroup,
+                    dept: rawDept,
                     desc: cleanName,
                     price1: p1Cents,
                     price2: p2Cents
@@ -1147,109 +1192,32 @@
 
         for (let art of articles) {
             let row = [
-                "", art.group, art.dept, art.desc, "", "",
-                art.price1, art.price2, "", "", "", "", "", "", ""
+                "",               // #PLU
+                art.group,        // GROUP
+                art.dept,         // DEPT
+                art.desc,         // DESCRIPTION
+                "",               // LONG_DESCRIPTION
+                "",               // KP_PLU_NOTES
+                art.price1,       // PRICE_1 (en centimes)
+                art.price2,       // PRICE_2 (en centimes)
+                "", "", "", "",   // PRICE_3..6
+                "",               // BARCODE
+                "",               // PREFERED
+                ""                // ON_TDE
             ];
             csvRows.push(row.join(';'));
         }
 
-        return { csv: csvRows.join('\r\n'), count: articles.length, disabledCount: disabledCount };
-    }
-
-    // --- SCRIPT 4 : CONVERTISSEUR INVERSE JSON POPINA VERS CSV ---
-    const dropZoneReverse = document.getElementById('dropZoneReverse');
-    const fileInputReverse = document.getElementById('fileInputReverse');
-    const reverseStatus = document.getElementById('reverseStatus');
-
-    dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
-    dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
-    dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
-    dropZoneReverse.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZoneReverse.classList.remove('dragover');
-        if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]);
-    });
-    fileInputReverse.addEventListener('change', (e) => {
-        if (e.target.files.length) handleFileReverse(e.target.files[0]);
-    });
-
-    function handleFileReverse(file) {
-        reverseStatus.className = 'status';
-        reverseStatus.textContent = "Extraction en cours...";
-        log('logReverse', `Lecture de ${file.name}...`);
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const jsonObj = JSON.parse(e.target.result);
-                const result = processJsonToCsv(jsonObj);
-                downloadCsv(result.csv, `${file.name.replace('.json', '')}_carte.csv`);
-                reverseStatus.className = 'status success';
-                reverseStatus.textContent = `Extraction réussie ! ${result.count} article(s) extrait(s).`;
-                log('logReverse', `Fichier réexporté en CSV avec succès.`);
-            } catch (err) {
-                console.error(err);
-                reverseStatus.className = 'status error';
-                reverseStatus.textContent = "Erreur lors de la lecture du fichier JSON.";
-                log('logReverse', `❌ Erreur : ${err.message}`);
-            }
+        return {
+            csv: csvRows.join('\r\n'),
+            count: articles.length,
+            disabledCount: disabledCount
         };
-        reader.readAsText(file, 'UTF-8');
     }
 
-    function processJsonToCsv(json) {
-        const macroMap = new Map();
-        if (json.macro_categories) {
-            json.macro_categories.forEach(m => macroMap.set(jsonId(m.client_id), m.name));
-        }
-
-        const catMap = new Map();
-        if (json.cards && json.cards[0] && json.cards[0].categories) {
-            json.cards[0].categories.forEach(c => {
-                const mName = macroMap.get(jsonId(c.macro_category?.client_id)) || "Général";
-                catMap.set(jsonId(c.client_id), { name: c.name, macroName: mName });
-            });
-        }
-
-        const taxMap = new Map();
-        if (json.taxes) {
-            json.taxes.forEach(t => taxMap.set(jsonId(t.client_id), (t.percentage / 100).toFixed(1)));
-        }
-
-        const rows = [["Groupe (Macro)", "Famille (Sous-catégorie)", "Nom Article", "Prix TTC (€)", "TVA (%)"].join(';')];
-        let count = 0;
-
-        if (json.items) {
-            json.items.forEach(item => {
-                const name = sanitizeName(item.name);
-                const macroName = macroMap.get(jsonId(item.macro_category?.client_id)) || "DIVERS";
-                
-                let catName = "Général";
-                catMap.forEach(val => {
-                    if (val.macroName === macroName) catName = val.name;
-                });
-
-                const priceAmount = item.prices && item.prices[0] ? (item.prices[0].amount / 100).toFixed(2) : "0.00";
-                const taxId = item.prices && item.prices[0] && item.prices[0].tax ? jsonId(item.prices[0].tax.client_id) : "";
-                const tvaVal = taxMap.get(taxId) || "20.0";
-
-                rows.push([`"${macroName}"`, `"${catName}"`, `"${name}"`, priceAmount, tvaVal].join(';'));
-                count++;
-            });
-        }
-
-        return { csv: rows.join('\r\n'), count: count };
-    }
-
-    function jsonId(obj) {
-        if (!obj) return "";
-        return typeof obj === 'string' ? obj : obj.client_id || "";
-    }
-
-    // --- TELECHARGEMENT AVEC BOM UTF-8 (\uFEFF) ---
     function downloadCsv(content, filename) {
-        const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
-        const link = document.append ? document.createElement("a") : document.createElement("a");
+        const blob = new Blob(["\ufeff" + content], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
         link.setAttribute("download", filename);
