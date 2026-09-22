@@ -28,7 +28,7 @@
         }
 
         .container {
-            max-width: 950px;
+            max-width: 1000px;
             margin: 0 auto;
         }
 
@@ -69,6 +69,7 @@
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1.5rem;
+            flex-wrap: wrap;
         }
 
         .tab-btn {
@@ -213,6 +214,17 @@
 
         th { background-color: #0f172a; color: var(--accent); }
 
+        td[contenteditable="true"] {
+            background: #0f172a88;
+            outline: 1px dashed var(--accent);
+            cursor: text;
+        }
+
+        td[contenteditable="true"]:focus {
+            background: #0284c733;
+            outline: 2px solid var(--accent);
+        }
+
         .log-console {
             background: #000;
             color: #4ade80;
@@ -234,20 +246,28 @@
         }
         .status.success { color: #22c55e; }
         .status.error { color: #ef4444; }
+
+        .hint-tag {
+            font-size: 0.75rem;
+            color: var(--warning);
+            margin-top: 0.5rem;
+            display: block;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v2.6</span> <span class="author-tag">by cyp</span></h1>
-        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Zero-Data Leak</div>
+        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v2.7</span> <span class="author-tag">by cyp</span></h1>
+        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Interactive Editor</div>
     </header>
 
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('tab-json')">CSV Popina ➔ JSON BO</button>
         <button class="tab-btn" onclick="switchTab('tab-nova')">Nova ➔ CSV Popina</button>
         <button class="tab-btn" onclick="switchTab('tab-tde')">Nova ➔ SmartTDE</button>
+        <button class="tab-btn" onclick="switchTab('tab-reverse')">JSON Popina ➔ CSV</button>
     </div>
 
     <!-- TAB 1: POPINA JSON -->
@@ -307,16 +327,17 @@
         </div>
 
         <div class="card" id="previewCard" style="display: none;">
-            <h3>📊 Aperçu des données structurées</h3>
+            <h3>📊 Aperçu & Édition directe des données</h3>
+            <span class="hint-tag">💡 Astuce : Vous pouvez cliquer sur les cellules pour modifier directement les textes, prix ou TVA avant l'export.</span>
             <div style="overflow-x: auto;">
                 <table id="previewTable">
                     <thead>
                         <tr>
-                            <th>Groupe (Pos)</th>
-                            <th>Famille (Pos / Groupe)</th>
-                            <th>Nom Article</th>
-                            <th>Prix TTC (€)</th>
-                            <th>TVA (%)</th>
+                            <th>Groupe</th>
+                            <th>Famille</th>
+                            <th>Nom Article (Éditable)</th>
+                            <th>Prix TTC (€) (Éditable)</th>
+                            <th>TVA (%) (Éditable)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -357,6 +378,22 @@
             <div id="logTde" class="log-console" style="display:none;"></div>
         </div>
     </div>
+
+    <!-- TAB 4: REVERSE (JSON POPINA TO CSV) -->
+    <div id="tab-reverse" class="tab-content">
+        <div class="card">
+            <h3>🔄 Extracteur : JSON Popina ➔ CSV Tableur</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Déposez un fichier <code>.json</code> d'export de Back-Office Popina pour extraire sa carte et obtenir un fichier CSV propre.
+            </p>
+            <div class="drop-zone" id="dropZoneReverse">
+                <p>Glissez votre fichier <strong>.json</strong> Popina ici</p>
+                <input type="file" id="fileInputReverse" accept=".json" style="display: none;">
+            </div>
+            <div class="status" id="reverseStatus"></div>
+            <div id="logReverse" class="log-console" style="display:none;"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -364,9 +401,8 @@
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
 
-        if (tabId === 'tab-json') document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        else if (tabId === 'tab-nova') document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        else if (tabId === 'tab-tde') document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        const btnIndex = ['tab-json', 'tab-nova', 'tab-tde', 'tab-reverse'].indexOf(tabId);
+        if (btnIndex !== -1) document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
 
         document.getElementById(tabId).classList.add('active');
     }
@@ -419,9 +455,7 @@
     const previewTableBody = document.querySelector('#previewTable tbody');
     const downloadBtn = document.getElementById('downloadBtn');
 
-    let parsedItems = [];
-    let parsedCardCategories = [];
-    let parsedMacroCategories = [];
+    let parsedRowsData = [];
 
     dropZoneJson.addEventListener('click', () => fileInputJson.click());
     dropZoneJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneJson.classList.add('dragover'); });
@@ -467,20 +501,8 @@
         if (idxPrix === -1) idxPrix = 3;
         if (idxTva === -1) idxTva = 4;
 
-        const macroCategoriesMap = new Map();
-        const categoriesMap = new Map();
-        const macroCatFamilyCounter = new Map();
-        parsedItems = [];
-
-        const taxMap = {
-            "10": "78de92d2-57ce-4998-8faf-364a806052ec",
-            "20": "A58D3A44-34B1-46FC-8481-8101542DA4DE",
-            "5.5": "3515EF97-8B72-4AEF-A3EF-8954E240D11A",
-            "5.50": "3515EF97-8B72-4AEF-A3EF-8954E240D11A"
-        };
-
         previewTableBody.innerHTML = '';
-        const nowISO = new Date().toISOString();
+        parsedRowsData = [];
 
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
@@ -493,75 +515,138 @@
             const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
 
             if (name) {
-                if (!macroCategoriesMap.has(groupeName)) {
-                    macroCategoriesMap.set(groupeName, { id: generateUUID(), index: macroCategoriesMap.size });
-                }
-                const macroObj = macroCategoriesMap.get(groupeName);
-
-                if (!macroCatFamilyCounter.has(macroObj.id)) {
-                    macroCatFamilyCounter.set(macroObj.id, 0);
-                }
-
-                const catKey = `${groupeName}__${categoryName}`;
-                if (!categoriesMap.has(catKey)) {
-                    const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
-                    macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
-
-                    categoriesMap.set(catKey, {
-                        id: generateUUID(),
-                        name: categoryName,
-                        macroId: macroObj.id,
-                        indexInGroup: familyIndexInGroup,
-                        positions: []
-                    });
-                }
-                const catObj = categoriesMap.get(catKey);
-
-                const itemId = generateUUID();
-                const priceInCents = Math.round((parseFloat(rawPrix) || 0) * 100);
-                const taxId = taxMap[rawTva] || taxMap["5.50"];
-
-                parsedItems.push({
-                    "name": name,
-                    "client_id": itemId,
-                    "modular_price": false,
-                    "preparation_step_index": 1,
-                    "screen_name": null,
-                    "kitchen_name": null,
-                    "sku": null,
-                    "date_creation": nowISO,
-                    "barcode": null,
-                    "is_weight_price": false,
-                    "kilo_price": 0.0,
-                    "item_is_limonade": false,
-                    "option_categories": [],
-                    "prices": [{
-                        "client_id": generateUUID(),
-                        "name": null,
-                        "amount": priceInCents,
-                        "price_type": 0,
-                        "tax": { "client_id": taxId }
-                    }],
-                    "macro_category": { "client_id": macroObj.id },
-                    "shared_option_categories": []
-                });
-
-                catObj.positions.push({
-                    "client_id": generateUUID(),
-                    "highlight_level": 0,
-                    "brightness_level": 0,
-                    "alternate_color": -1,
-                    "index": catObj.positions.length,
-                    "item": { "client_id": itemId }
-                });
+                const itemObj = {
+                    groupe: groupeName,
+                    category: categoryName,
+                    name: name,
+                    price: parseFloat(rawPrix) || 0,
+                    tva: rawTva || "20"
+                };
+                parsedRowsData.push(itemObj);
 
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${groupeName} (Pos: ${macroObj.index + 1})</td><td>${categoryName} (Pos: ${catObj.indexInGroup + 1})</td><td><strong>${name}</strong></td><td>${parseFloat(rawPrix).toFixed(2)} €</td><td>${rawTva}%</td>`;
+                tr.innerHTML = `
+                    <td>${itemObj.groupe}</td>
+                    <td>${itemObj.category}</td>
+                    <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${itemObj.name}</strong></td>
+                    <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${itemObj.price.toFixed(2)}</td>
+                    <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${itemObj.tva}</td>
+                `;
                 previewTableBody.appendChild(tr);
             }
         }
 
-        parsedMacroCategories = [];
+        // ÉCOUTE DE L'ÉDITION DIRECTE (OPTION 2)
+        previewTableBody.querySelectorAll('td[contenteditable="true"]').forEach(td => {
+            td.addEventListener('blur', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'), 10);
+                const field = e.target.getAttribute('data-field');
+                let val = e.target.innerText.trim();
+
+                if (field === 'price') {
+                    val = parseFloat(val.replace(',', '.')) || 0;
+                    e.target.innerText = val.toFixed(2);
+                }
+                parsedRowsData[idx][field] = val;
+                log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
+            });
+        });
+
+        previewCard.style.display = 'block';
+        log('logJson', `Parsing réussi : ${parsedRowsData.length} articles extraits.`);
+    }
+
+    downloadBtn.addEventListener('click', () => {
+        if (!parsedRowsData.length) return;
+
+        const storeName = sanitizeName(document.getElementById('ticket_name').value) || "MON COMMERCE";
+        const companySiret = sanitizeName(document.getElementById('ticket_company').value);
+        const numTva = sanitizeName(document.getElementById('ticket_tva').value);
+        const codeNaf = sanitizeName(document.getElementById('ticket_naf').value);
+        const address = sanitizeName(document.getElementById('ticket_address').value);
+        const zip = sanitizeName(document.getElementById('ticket_zip').value);
+        const city = sanitizeName(document.getElementById('ticket_city').value);
+        const phone = sanitizeName(document.getElementById('ticket_phone').value);
+        const gerantCode = sanitizeName(document.getElementById('gerant_code').value) || "0000";
+        const nowISO = new Date().toISOString();
+
+        const taxMap = {
+            "10": "78de92d2-57ce-4998-8faf-364a806052ec",
+            "20": "A58D3A44-34B1-46FC-8481-8101542DA4DE",
+            "5.5": "3515EF97-8B72-4AEF-A3EF-8954E240D11A",
+            "5.50": "3515EF97-8B72-4AEF-A3EF-8954E240D11A"
+        };
+
+        const macroCategoriesMap = new Map();
+        const categoriesMap = new Map();
+        const macroCatFamilyCounter = new Map();
+        const finalItems = [];
+
+        parsedRowsData.forEach(row => {
+            if (!macroCategoriesMap.has(row.groupe)) {
+                macroCategoriesMap.set(row.groupe, { id: generateUUID(), index: macroCategoriesMap.size });
+            }
+            const macroObj = macroCategoriesMap.get(row.groupe);
+
+            if (!macroCatFamilyCounter.has(macroObj.id)) {
+                macroCatFamilyCounter.set(macroObj.id, 0);
+            }
+
+            const catKey = `${row.groupe}__${row.category}`;
+            if (!categoriesMap.has(catKey)) {
+                const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
+                macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
+
+                categoriesMap.set(catKey, {
+                    id: generateUUID(),
+                    name: row.category,
+                    macroId: macroObj.id,
+                    indexInGroup: familyIndexInGroup,
+                    positions: []
+                });
+            }
+            const catObj = categoriesMap.get(catKey);
+
+            const itemId = generateUUID();
+            const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
+            const taxId = taxMap[String(row.tva)] || taxMap["5.50"];
+
+            finalItems.push({
+                "name": row.name,
+                "client_id": itemId,
+                "modular_price": false,
+                "preparation_step_index": 1,
+                "screen_name": null,
+                "kitchen_name": null,
+                "sku": null,
+                "date_creation": nowISO,
+                "barcode": null,
+                "is_weight_price": false,
+                "kilo_price": 0.0,
+                "item_is_limonade": false,
+                "option_categories": [],
+                "prices": [{
+                    "client_id": generateUUID(),
+                    "name": null,
+                    "amount": priceInCents,
+                    "price_type": 0,
+                    "tax": { "client_id": taxId }
+                }],
+                "macro_category": { "client_id": macroObj.id },
+                "shared_option_categories": []
+            });
+
+            catObj.positions.push({
+                "client_id": generateUUID(),
+                "highlight_level": 0,
+                "brightness_level": 0,
+                "alternate_color": -1,
+                "index": catObj.positions.length,
+                "item": { "client_id": itemId }
+            });
+        });
+
+        const parsedMacroCategories = [];
         macroCategoriesMap.forEach((val, gName) => {
             parsedMacroCategories.push({
                 "client_id": val.id,
@@ -574,7 +659,7 @@
             });
         });
 
-        parsedCardCategories = [];
+        const parsedCardCategories = [];
         categoriesMap.forEach((val) => {
             parsedCardCategories.push({
                 "client_id": val.id,
@@ -586,24 +671,6 @@
                 "macro_category": { "client_id": val.macroId }
             });
         });
-
-        previewCard.style.display = 'block';
-        log('logJson', `Parsing réussi: ${parsedItems.length} articles extraits.`);
-    }
-
-    downloadBtn.addEventListener('click', () => {
-        if (!parsedItems.length) return;
-
-        const storeName = sanitizeName(document.getElementById('ticket_name').value) || "MON COMMERCE";
-        const companySiret = sanitizeName(document.getElementById('ticket_company').value);
-        const numTva = sanitizeName(document.getElementById('ticket_tva').value);
-        const codeNaf = sanitizeName(document.getElementById('ticket_naf').value);
-        const address = sanitizeName(document.getElementById('ticket_address').value);
-        const zip = sanitizeName(document.getElementById('ticket_zip').value);
-        const city = sanitizeName(document.getElementById('ticket_city').value);
-        const phone = sanitizeName(document.getElementById('ticket_phone').value);
-        const gerantCode = sanitizeName(document.getElementById('gerant_code').value) || "0000";
-        const nowISO = new Date().toISOString();
 
         const targetPaymentMethods = [
             { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
@@ -719,7 +786,7 @@
                 }
             ],
             "payment_methods": targetPaymentMethods,
-            "items": parsedItems,
+            "items": finalItems,
             "printers": [],
             "places": [
                 { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shlould_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
@@ -877,9 +944,6 @@
             if (line.startsWith('G;DESC;')) { currentSection = "G"; continue; }
             else if (line.startsWith('D;TYPE;')) { currentSection = "D"; continue; }
             else if (line.startsWith('A;TYPE;')) { currentSection = "A"; continue; }
-            else if (line.startsWith('FM;') || line.startsWith('FIX;') || line.startsWith('W;') || line.startsWith('S;') || line.startsWith('M;') || line.startsWith('K;') || line.startsWith('C;')) {
-                currentSection = "OTHER"; continue;
-            }
 
             const parts = line.split(';');
             if (currentSection === "G" && parts.length > 1) {
@@ -1090,6 +1154,98 @@
         return { csv: csvRows.join('\r\n'), count: articles.length, disabledCount: disabledCount };
     }
 
+    // --- SCRIPT 4 : CONVERTISSEUR INVERSE JSON POPINA VERS CSV (OPTION 3) ---
+    const dropZoneReverse = document.getElementById('dropZoneReverse');
+    const fileInputReverse = document.getElementById('fileInputReverse');
+    const reverseStatus = document.getElementById('reverseStatus');
+
+    dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
+    dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
+    dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
+    dropZoneReverse.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneReverse.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]);
+    });
+    fileInputReverse.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileReverse(e.target.files[0]);
+    });
+
+    function handleFileReverse(file) {
+        reverseStatus.className = 'status';
+        reverseStatus.textContent = "Extraction en cours...";
+        log('logReverse', `Lecture de ${file.name}...`);
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const jsonObj = JSON.parse(e.target.result);
+                const result = processJsonToCsv(jsonObj);
+                downloadCsv(result.csv, `${file.name.replace('.json', '')}_carte.csv`);
+                reverseStatus.className = 'status success';
+                reverseStatus.textContent = `Extraction réussie ! ${result.count} article(s) extrait(s).`;
+                log('logReverse', `Fichier réexporté en CSV avec succès.`);
+            } catch (err) {
+                console.error(err);
+                reverseStatus.className = 'status error';
+                reverseStatus.textContent = "Erreur lors de la lecture du fichier JSON.";
+                log('logReverse', `❌ Erreur : ${err.message}`);
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function processJsonToCsv(json) {
+        const macroMap = new Map();
+        if (json.macro_categories) {
+            json.macro_categories.forEach(m => macroMap.set(jsonId(m.client_id), m.name));
+        }
+
+        const catMap = new Map();
+        if (json.cards && json.cards[0] && json.cards[0].categories) {
+            json.cards[0].categories.forEach(c => {
+                const mName = macroMap.get(jsonId(c.macro_category?.client_id)) || "Général";
+                catMap.set(jsonId(c.client_id), { name: c.name, macroName: mName });
+            });
+        }
+
+        const taxMap = new Map();
+        if (json.taxes) {
+            json.taxes.forEach(t => taxMap.set(jsonId(t.client_id), (t.percentage / 100).toFixed(1)));
+        }
+
+        const rows = [["Groupe (Macro)", "Famille (Sous-catégorie)", "Nom Article", "Prix TTC (€)", "TVA (%)"].join(';')];
+        let count = 0;
+
+        if (json.items) {
+            json.items.forEach(item => {
+                const name = sanitizeName(item.name);
+                const macroName = macroMap.get(jsonId(item.macro_category?.client_id)) || "DIVERS";
+                
+                let catName = "Général";
+                // Tente de trouver la sous-catégorie via les cartes
+                catMap.forEach(val => {
+                    if (val.macroName === macroName) catName = val.name;
+                });
+
+                const priceAmount = item.prices && item.prices[0] ? (item.prices[0].amount / 100).toFixed(2) : "0.00";
+                const taxId = item.prices && item.prices[0] && item.prices[0].tax ? jsonId(item.prices[0].tax.client_id) : "";
+                const tvaVal = taxMap.get(taxId) || "20.0";
+
+                rows.push([`"${macroName}"`, `"${catName}"`, `"${name}"`, priceAmount, tvaVal].join(';'));
+                count++;
+            });
+        }
+
+        return { csv: rows.join('\r\n'), count: count };
+    }
+
+    function jsonId(obj) {
+        if (!obj) return "";
+        return typeof obj === 'string' ? obj : obj.client_id || "";
+    }
+
+    // --- TELECHARGEMENT AVEC BOM UTF-8 (\uFEFF) ---
     function downloadCsv(content, filename) {
         const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
