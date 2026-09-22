@@ -259,8 +259,8 @@
 
 <div class="container">
     <header>
-        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v2.8</span> <span class="author-tag">by cyp</span></h1>
-        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Bugfix UUID & Schema Popina</div>
+        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v2.9</span> <span class="author-tag">by cyp</span></h1>
+        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Fix Typo Key Popina Schema</div>
     </header>
 
     <div class="tabs">
@@ -671,7 +671,6 @@
             });
         });
 
-        // FIX 1 : UUID Hexadécimal valide pour Uber Eats (remplacement de AN98 par A998)
         const targetPaymentMethods = [
             { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
             { "client_id": "F0CC63FF-2E20-40A4-B1B1-27C02177D63D", "name": "Mews", "mode": 11, "index": 9, "enabled": false, "change": false, "drawer": false, "should_print": false },
@@ -719,7 +718,7 @@
             { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
         ];
 
-        // FIX 2 : should_print_all_items (correction de la coquille shlould_print_all_items)
+        // FIX : Orthographe exacte shloud_print_all_items attendue par le schema Popina
         const finalJsonData = {
             "name": storeName,
             "locale": "fr_FR",
@@ -790,8 +789,8 @@
             "items": finalItems,
             "printers": [],
             "places": [
-                { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "should_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
-                { "client_id": "CBC89272-5DC4-4E60-B2E4-A0650E41822F", "creation_date": nowISO, "name": "Bar", "should_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] }
+                { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
+                { "client_id": "CBC89272-5DC4-4E60-B2E4-A0650E41822F", "creation_date": nowISO, "name": "Bar", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] }
             ],
             "place_printer_links": [],
             "cards": [{
