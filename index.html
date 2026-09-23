@@ -787,7 +787,7 @@
                 }
             ],
             "payment_methods": targetPaymentMethods,
-            "items": parsedItems,
+            "items": finalItems,
             "printers": [],
             "places": [
                 { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
@@ -900,15 +900,6 @@
         reader.readAsText(file, 'ISO-8859-1');
     }
 
-    function sanitizeName(str) {
-        if (!str) return "";
-        let clean = String(str).trim();
-        if (clean.length > 254) {
-            clean = clean.substring(0, 254);
-        }
-        return clean;
-    }
-
     function formatNumber(val) {
         if (val === "" || val === null || val === undefined) return "";
         const num = parseFloat(val);
@@ -995,7 +986,6 @@
         let popinaTree = {};
 
         for (let art of rawArticles) {
-            // Résolution dynamique : nom mappé d'abord, sinon texte direct de la colonne
             let rawCat = groups[art.groupId] || art.groupId || "DIVERS";
             let rawSub = depts[art.deptId] || art.deptId || rawCat;
 
@@ -1212,6 +1202,113 @@
             csv: csvRows.join('\r\n'),
             count: articles.length,
             disabledCount: disabledCount
+        };
+    }
+
+
+    // --- SCRIPT 4 : REVERSE (JSON POPINA VERS CSV TABLEUR) ---
+    const dropZoneReverse = document.getElementById('dropZoneReverse');
+    const fileInputReverse = document.getElementById('fileInputReverse');
+    const reverseStatus = document.getElementById('reverseStatus');
+
+    dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
+    dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
+    dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
+    dropZoneReverse.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneReverse.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]);
+    });
+    fileInputReverse.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileReverse(e.target.files[0]);
+    });
+
+    function handleFileReverse(file) {
+        reverseStatus.className = 'status';
+        reverseStatus.textContent = "Extraction en cours...";
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const jsonObj = JSON.parse(e.target.result);
+                const csvData = processJsonToCsv(jsonObj);
+                if (csvData.count > 0) {
+                    downloadCsv(csvData.csv, "export_popina_extrait.csv");
+                    reverseStatus.className = 'status success';
+                    reverseStatus.textContent = `Extraction réussie ! ${csvData.count} article(s) extrait(s).`;
+                } else {
+                    reverseStatus.className = 'status error';
+                    reverseStatus.textContent = "Aucun article trouvé dans ce fichier JSON.";
+                }
+            } catch (err) {
+                console.error(err);
+                reverseStatus.className = 'status error';
+                reverseStatus.textContent = "Erreur de lecture du fichier JSON.";
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function processJsonToCsv(jsonObj) {
+        let products = {};
+        let prices = {};
+        let taxes = {};
+
+        // Cas 1: Format d'export récent avec "changes" (UPSERT)
+        if (jsonObj.changes && Array.isArray(jsonObj.changes)) {
+            jsonObj.changes.forEach(item => {
+                if (item.type === "product" && item.data) {
+                    products[item.data.id] = item.data.name;
+                } else if (item.type === "tax" && item.data) {
+                    taxes[item.data.id] = item.data.rate ? (item.data.rate / 100) : 20;
+                } else if (item.type === "price" && item.data) {
+                    prices[item.data.productId] = {
+                        amount: item.data.amount ? (item.data.amount / 100).toFixed(2) : "0.00",
+                        taxId: item.data.taxId
+                    };
+                }
+            });
+        } 
+        // Cas 2: Format d'export classique Popina (items / taxes)
+        else if (jsonObj.items && Array.isArray(jsonObj.items)) {
+            let taxMap = {};
+            if (jsonObj.taxes) {
+                jsonObj.taxes.forEach(t => {
+                    taxMap[t.client_id] = t.percentage ? (t.percentage / 100) : 20;
+                });
+            }
+            jsonObj.items.forEach(item => {
+                const pName = item.name;
+                let pPrice = "0.00";
+                let pTva = "20";
+                if (item.prices && item.prices.length > 0) {
+                    pPrice = (item.prices[0].amount / 100).toFixed(2);
+                    if (item.prices[0].tax && item.prices[0].tax.client_id) {
+                        pTva = taxMap[item.prices[0].tax.client_id] || "20";
+                    }
+                }
+                products[item.client_id] = pName;
+                prices[item.client_id] = { amount: pPrice, taxId: null, tvaValue: pTva };
+            });
+        }
+
+        const csvRows = ["Description (Nom article);Prix Sur place (Prix 1);TVA Sur place"];
+        let count = 0;
+
+        for (let pId in products) {
+            const name = products[pId];
+            if (!name || name === "5") continue;
+
+            const priceObj = prices[pId] || { amount: "0.00", taxId: null };
+            const tva = priceObj.tvaValue || (priceObj.taxId ? (taxes[priceObj.taxId] || 20) : 20);
+
+            csvRows.push(`"${name.replace(/"/g, '""')}";${priceObj.amount};${tva}`);
+            count++;
+        }
+
+        return {
+            csv: csvRows.join('\r\n'),
+            count: count
         };
     }
 
