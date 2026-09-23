@@ -571,11 +571,11 @@
 
         function resolveTaxId(tvaInput) {
             const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
-            if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Défaut 20%
-            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // TVA 20% (HO BIBLIO)
-            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec"; // TVA 10% (HO BIBLIO)
-            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A"; // TVA 5.5% (HO BIBLIO)
-            return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // Fallback 20%
+            if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
+            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
+            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec";
+            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A";
+            return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
         }
 
         const macroCategoriesMap = new Map();
@@ -1199,7 +1199,7 @@
         }
 
         return {
-            csv: csvRows.join('\r\n'),
+            csv: csvRows.join('\r\n') + '\r\n', // Garantit la présence d'un retour à la ligne final
             count: articles.length,
             disabledCount: disabledCount
         };
@@ -1260,7 +1260,6 @@
         if (jsonObj.changes && Array.isArray(jsonObj.changes)) {
             let buttonGroupsMap = {};
 
-            // 1. Récupérer tous les groupes / dossiers
             jsonObj.changes.forEach(item => {
                 if (item.type === "buttonGroup" && item.data) {
                     buttonGroupsMap[item.data.id] = {
@@ -1280,7 +1279,6 @@
                 }
             });
 
-            // 2. Associer chaque produit à sa famille et son groupe d'origine
             Object.keys(buttonGroupsMap).forEach(bgId => {
                 const groupObj = buttonGroupsMap[bgId];
                 if (groupObj.buttons) {
@@ -1371,13 +1369,14 @@
         }
 
         return {
-            csv: csvRows.join('\r\n'),
+            csv: csvRows.join('\r\n') + '\r\n',
             count: count
         };
     }
 
     function downloadCsv(content, filename) {
-        const blob = new Blob(["\ufeff" + content], { type: 'text/csv;charset=utf-8;' });
+        // Enlève le BOM (\ufeff) pour la compatibilité stricte avec SmartTDE et autres logiciels
+        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
