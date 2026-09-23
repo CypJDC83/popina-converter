@@ -344,6 +344,7 @@
                 </table>
             </div>
             <button class="btn" id="downloadBtn">📥 Télécharger le JSON Nouveau BO Popina</button>
+            <div class="status" id="jsonStatus"></div>
         </div>
     </div>
 
@@ -432,10 +433,23 @@
     }
 
     function generateUUID() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        // Fallback pour navigateurs/contextes sans crypto.randomUUID (ex: HTTP non sécurisé)
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     function sanitizeName(str) {
@@ -526,11 +540,11 @@
 
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${itemObj.groupe}</td>
-                    <td>${itemObj.category}</td>
-                    <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${itemObj.name}</strong></td>
-                    <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${itemObj.price.toFixed(2)}</td>
-                    <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${itemObj.tva}</td>
+                    <td>${escapeHtml(itemObj.groupe)}</td>
+                    <td>${escapeHtml(itemObj.category)}</td>
+                    <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${escapeHtml(itemObj.name)}</strong></td>
+                    <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.price.toFixed(2))}</td>
+                    <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.tva)}</td>
                 `;
                 previewTableBody.appendChild(tr);
             }
@@ -541,13 +555,29 @@
                 const idx = parseInt(e.target.getAttribute('data-index'), 10);
                 const field = e.target.getAttribute('data-field');
                 let val = e.target.innerText.trim();
+                let invalid = false;
 
-                if (field === 'price') {
-                    val = parseFloat(val.replace(',', '.')) || 0;
+                if (field === 'name') {
+                    if (!val) { invalid = true; val = parsedRowsData[idx].name; e.target.innerText = val; }
+                } else if (field === 'price') {
+                    const parsed = parseFloat(val.replace(',', '.'));
+                    if (isNaN(parsed) || parsed < 0) { invalid = true; }
+                    val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
                     e.target.innerText = val.toFixed(2);
+                } else if (field === 'tva') {
+                    const parsed = parseFloat(val.replace(',', '.'));
+                    if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
                 }
+
+                e.target.style.outlineColor = invalid ? 'var(--danger)' : '';
+                e.target.style.background = invalid ? '#ef444422' : '';
+
                 parsedRowsData[idx][field] = val;
-                log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
+                if (invalid) {
+                    log('logJson', `⚠ Valeur invalide pour "${parsedRowsData[idx].name}" (${field}), vérifiez avant export.`);
+                } else {
+                    log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
+                }
             });
         });
 
@@ -556,7 +586,12 @@
     }
 
     downloadBtn.addEventListener('click', () => {
-        if (!parsedRowsData.length) return;
+        const jsonStatus = document.getElementById('jsonStatus');
+        if (!parsedRowsData.length) {
+            jsonStatus.className = 'status error';
+            jsonStatus.textContent = "Aucune donnée à exporter. Importez d'abord un fichier CSV.";
+            return;
+        }
 
         const storeName = sanitizeName(document.getElementById('ticket_name').value) || "MON COMMERCE";
         const companySiret = sanitizeName(document.getElementById('ticket_company').value);
@@ -859,6 +894,9 @@
         document.body.appendChild(downloadAnchor);
         downloadAnchor.click();
         downloadAnchor.remove();
+
+        jsonStatus.className = 'status success';
+        jsonStatus.textContent = `Export réussi ! ${finalItems.length} article(s), ${parsedMacroCategories.length} groupe(s) exporté(s).`;
     });
 
 
@@ -1097,7 +1135,7 @@
             try {
                 const text = e.target.result;
                 const result = processNovaToTDE(text);
-                downloadCsv(result.csv, "prog_smartTDE_converti.csv");
+                downloadCsv(result.csv, "prog_smartTDE_converti.csv", false);
                 tdeStatus.className = 'status success';
                 tdeStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) au format SmartTDE (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
             } catch (err) {
@@ -1374,9 +1412,12 @@
         };
     }
 
-    function downloadCsv(content, filename) {
-        // Enlève le BOM (\ufeff) pour la compatibilité stricte avec SmartTDE et autres logiciels
-        const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    function downloadCsv(content, filename, withBom = true) {
+        // Le BOM (\ufeff) indique à Excel que le fichier est en UTF-8 : sans lui,
+        // Excel suppose l'ancien encodage ANSI et les accents s'affichent "Ã©" au lieu de "é".
+        // SmartTDE exige au contraire l'absence de BOM (withBom=false pour cet export).
+        const parts = withBom ? ['\ufeff', content] : [content];
+        const blob = new Blob(parts, { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
