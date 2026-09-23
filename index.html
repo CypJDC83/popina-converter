@@ -910,10 +910,10 @@
     function getTvaValue(taxCode) {
         const code = String(taxCode).trim();
         switch (code) {
-            case "1": return 10.0; // Code 1 dans Nova = TVA 10%
-            case "2": return 20.0; // Code 2 dans Nova = TVA 20%
-            case "3": return 5.5;  // Code 3 dans Nova = TVA 5.5%
-            case "4": return 0.0;  // Code 4 dans Nova = Exonéré 0%
+            case "1": return 10.0;
+            case "2": return 20.0;
+            case "3": return 5.5;
+            case "4": return 0.0;
             case "0": return 10.0;
             default: return 20.0;
         }
@@ -1253,11 +1253,22 @@
         let products = {};
         let prices = {};
         let taxes = {};
+        let productCategories = {};
+        let productGroups = {};
 
         // Cas 1: Format d'export récent avec "changes" (UPSERT)
         if (jsonObj.changes && Array.isArray(jsonObj.changes)) {
+            let buttonGroupsMap = {};
+
+            // 1. Récupérer tous les groupes / dossiers
             jsonObj.changes.forEach(item => {
-                if (item.type === "product" && item.data) {
+                if (item.type === "buttonGroup" && item.data) {
+                    buttonGroupsMap[item.data.id] = {
+                        name: item.data.name,
+                        buttons: item.data.buttons || [],
+                        isRoot: item.data.isRoot || false
+                    };
+                } else if (item.type === "product" && item.data) {
                     products[item.data.id] = item.data.name;
                 } else if (item.type === "tax" && item.data) {
                     taxes[item.data.id] = item.data.rate ? (item.data.rate / 100) : 20;
@@ -1268,41 +1279,94 @@
                     };
                 }
             });
+
+            // 2. Associer chaque produit à sa famille et son groupe d'origine
+            Object.keys(buttonGroupsMap).forEach(bgId => {
+                const groupObj = buttonGroupsMap[bgId];
+                if (groupObj.buttons) {
+                    groupObj.buttons.forEach(btn => {
+                        if (btn.type === "product" && btn.objectId) {
+                            productCategories[btn.objectId] = groupObj.name;
+                        } else if (btn.type === "buttonGroup" && btn.objectId && buttonGroupsMap[btn.objectId]) {
+                            const subGroup = buttonGroupsMap[btn.objectId];
+                            if (subGroup.buttons) {
+                                subGroup.buttons.forEach(subBtn => {
+                                    if (subBtn.type === "product" && subBtn.objectId) {
+                                        productGroups[subBtn.objectId] = groupObj.name;
+                                        productCategories[subBtn.objectId] = subGroup.name;
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
         } 
-        // Cas 2: Format d'export classique Popina (items / taxes)
+        // Cas 2: Format d'export classique Popina (items / macro_categories / cards)
         else if (jsonObj.items && Array.isArray(jsonObj.items)) {
             let taxMap = {};
+            let macroMap = {};
+            let categoryMap = {};
+
             if (jsonObj.taxes) {
                 jsonObj.taxes.forEach(t => {
                     taxMap[t.client_id] = t.percentage ? (t.percentage / 100) : 20;
                 });
             }
+
+            if (jsonObj.macro_categories) {
+                jsonObj.macro_categories.forEach(mc => {
+                    macroMap[mc.client_id] = mc.name;
+                });
+            }
+
+            if (jsonObj.cards && jsonObj.cards[0] && jsonObj.cards[0].categories) {
+                jsonObj.cards[0].categories.forEach(cat => {
+                    categoryMap[cat.client_id] = cat.name;
+                    if (cat.positions) {
+                        cat.positions.forEach(pos => {
+                            if (pos.item && pos.item.client_id) {
+                                productCategories[pos.item.client_id] = cat.name;
+                            }
+                        });
+                    }
+                });
+            }
+
             jsonObj.items.forEach(item => {
                 const pName = item.name;
                 let pPrice = "0.00";
                 let pTva = "20";
+
                 if (item.prices && item.prices.length > 0) {
                     pPrice = (item.prices[0].amount / 100).toFixed(2);
                     if (item.prices[0].tax && item.prices[0].tax.client_id) {
                         pTva = taxMap[item.prices[0].tax.client_id] || "20";
                     }
                 }
+
                 products[item.client_id] = pName;
                 prices[item.client_id] = { amount: pPrice, taxId: null, tvaValue: pTva };
+
+                if (item.macro_category && item.macro_category.client_id) {
+                    productGroups[item.client_id] = macroMap[item.macro_category.client_id] || "DIVERS";
+                }
             });
         }
 
-        const csvRows = ["Description (Nom article);Prix Sur place (Prix 1);TVA Sur place"];
+        const csvRows = ["Groupe (Macro-catégorie);Sous-catégorie (Famille);Description (Nom article);Prix Sur place (Prix 1);TVA Sur place"];
         let count = 0;
 
         for (let pId in products) {
             const name = products[pId];
             if (!name || name === "5") continue;
 
+            const group = productGroups[pId] || "DIVERS";
+            const category = productCategories[pId] || group;
             const priceObj = prices[pId] || { amount: "0.00", taxId: null };
             const tva = priceObj.tvaValue || (priceObj.taxId ? (taxes[priceObj.taxId] || 20) : 20);
 
-            csvRows.push(`"${name.replace(/"/g, '""')}";${priceObj.amount};${tva}`);
+            csvRows.push(`"${group.replace(/"/g, '""')}";"${category.replace(/"/g, '""')}";"${name.replace(/"/g, '""')}";${priceObj.amount};${tva}`);
             count++;
         }
 
