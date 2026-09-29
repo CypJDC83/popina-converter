@@ -1,7 +1,7 @@
-<!DOCTYPE HTML>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
+<!DOCTYPE html>
+<!-- saved from url=(0044)https://cypjdc83.github.io/popina-converter/ -->
+<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Converter - Tech Edition by cyp</title>
     <style>
@@ -323,11 +323,11 @@
                 <p>Glissez-déposez votre fichier <strong>.csv</strong> au format Popina ici ou cliquez pour choisir un fichier.</p>
                 <input type="file" id="fileInputJson" accept=".csv" style="display: none;">
             </div>
-            <div id="logJson" class="log-console" style="display:none;"></div>
+            <div id="logJson" class="log-console" style="display: block;"></div>
         </div>
 
         <div class="card" id="previewCard" style="display: none;">
-            <h3>📊 Aperçu & Édition directe des données</h3>
+            <h3>📊 Aperçu &amp; Édition directe des données</h3>
             <span class="hint-tag">💡 Astuce : Vous pouvez cliquer sur les cellules pour modifier directement les textes, prix ou TVA avant l'export.</span>
             <div style="overflow-x: auto;">
                 <table id="previewTable">
@@ -336,15 +336,17 @@
                             <th>Groupe</th>
                             <th>Famille</th>
                             <th>Nom Article (Éditable)</th>
-                            <th>Prix TTC (€) (Éditable)</th>
-                            <th>TVA (%) (Éditable)</th>
+                            <th>Prix Sur Place (€)</th>
+                            <th>TVA Sur Place (%)</th>
+                            <th>Prix Emporter (€)</th>
+                            <th>TVA Emporter (%)</th>
                         </tr>
                     </thead>
                     <tbody></tbody>
                 </table>
             </div>
             <button class="btn" id="downloadBtn">📥 Télécharger le JSON Nouveau BO Popina</button>
-            <div class="status" id="jsonStatus"></div>
+            <div class="status success" id="jsonStatus"></div>
         </div>
     </div>
 
@@ -436,7 +438,6 @@
         if (window.crypto && typeof window.crypto.randomUUID === 'function') {
             return window.crypto.randomUUID();
         }
-        // Fallback pour navigateurs/contextes sans crypto.randomUUID (ex: HTTP non sécurisé)
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
@@ -490,18 +491,44 @@
         reader.readAsText(file, 'UTF-8');
     }
 
+    function parseCSVLine(line, delimiter) {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === delimiter && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += char;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
     function parseCSVJson(text) {
         const lines = text.split(/\r\n|\n/);
         if (lines.length < 2) { alert('Le fichier CSV est vide.'); return; }
 
         const delimiter = text.includes(';') ? ';' : ',';
-        const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
+        const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase());
 
         let idxGroupe = headers.findIndex(h => h.includes('groupe') || h.includes('macro'));
         let idxCat = headers.findIndex((h, idx) => idx !== idxGroupe && (h.includes('famille') || h.includes('categorie') || h.includes('sous-cat')));
         let idxNom = headers.findIndex(h => h.includes('description') || h.includes('nom') || h.includes('article'));
-        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h.includes('prix'));
-        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h.includes('tva'));
+        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h === 'prix');
+        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h === 'tva');
+        let idxPrix2 = headers.findIndex(h => h.includes('prix emporter') || h.includes('prix 2'));
+        let idxTva2 = headers.findIndex(h => h.includes('tva emporter') || h.includes('tva 2'));
 
         if (idxGroupe === -1) {
             if (headers.length >= 2 && (headers[0].includes('cat') || headers[0].includes('famille')) && (headers[1].includes('cat') || headers[1].includes('famille'))) {
@@ -514,19 +541,23 @@
         if (idxNom === -1) idxNom = 2;
         if (idxPrix === -1) idxPrix = 3;
         if (idxTva === -1) idxTva = 4;
+        if (idxPrix2 === -1 && headers.length > 5) idxPrix2 = 5;
+        if (idxTva2 === -1 && headers.length > 6) idxTva2 = 6;
 
         previewTableBody.innerHTML = '';
         parsedRowsData = [];
 
         for (let i = 1; i < lines.length; i++) {
             if (!lines[i].trim()) continue;
-            const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^"|"$/g, ''));
+            const cols = parseCSVLine(lines[i], delimiter);
 
             const groupeName = idxGroupe >= 0 ? sanitizeName(cols[idxGroupe] || 'Groupe 1') : 'Groupe 1';
             const categoryName = sanitizeName(cols[idxCat] || 'Général');
             const name = sanitizeName(cols[idxNom] || '');
             const rawPrix = (cols[idxPrix] || '0').replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
             const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawPrix2 = idxPrix2 >= 0 && cols[idxPrix2] ? cols[idxPrix2].replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
+            const rawTva2 = idxTva2 >= 0 && cols[idxTva2] ? cols[idxTva2].replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
 
             if (name) {
                 const itemObj = {
@@ -534,7 +565,9 @@
                     category: categoryName,
                     name: name,
                     price: parseFloat(rawPrix) || 0,
-                    tva: rawTva || "20"
+                    tva: rawTva || "20",
+                    price2: rawPrix2 !== '' ? (parseFloat(rawPrix2) || 0) : null,
+                    tva2: rawTva2 !== '' ? rawTva2 : (rawPrix2 !== '' ? (rawTva || "20") : null)
                 };
                 parsedRowsData.push(itemObj);
 
@@ -545,6 +578,8 @@
                     <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${escapeHtml(itemObj.name)}</strong></td>
                     <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.price.toFixed(2))}</td>
                     <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.tva)}</td>
+                    <td contenteditable="true" data-field="price2" data-index="${parsedRowsData.length - 1}">${itemObj.price2 !== null ? escapeHtml(itemObj.price2.toFixed(2)) : ''}</td>
+                    <td contenteditable="true" data-field="tva2" data-index="${parsedRowsData.length - 1}">${itemObj.tva2 !== null ? escapeHtml(itemObj.tva2) : ''}</td>
                 `;
                 previewTableBody.appendChild(tr);
             }
@@ -559,14 +594,24 @@
 
                 if (field === 'name') {
                     if (!val) { invalid = true; val = parsedRowsData[idx].name; e.target.innerText = val; }
-                } else if (field === 'price') {
-                    const parsed = parseFloat(val.replace(',', '.'));
-                    if (isNaN(parsed) || parsed < 0) { invalid = true; }
-                    val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
-                    e.target.innerText = val.toFixed(2);
-                } else if (field === 'tva') {
-                    const parsed = parseFloat(val.replace(',', '.'));
-                    if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
+                } else if (field === 'price' || field === 'price2') {
+                    if (val === '' && field === 'price2') {
+                        val = null;
+                        e.target.innerText = '';
+                    } else {
+                        const parsed = parseFloat(val.replace(',', '.'));
+                        if (isNaN(parsed) || parsed < 0) { invalid = true; }
+                        val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+                        e.target.innerText = val.toFixed(2);
+                    }
+                } else if (field === 'tva' || field === 'tva2') {
+                    if (val === '' && field === 'tva2') {
+                        val = null;
+                        e.target.innerText = '';
+                    } else {
+                        const parsed = parseFloat(val.replace(',', '.'));
+                        if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
+                    }
                 }
 
                 e.target.style.outlineColor = invalid ? 'var(--danger)' : '';
@@ -647,6 +692,26 @@
             const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
             const taxId = resolveTaxId(row.tva);
 
+            const itemPrices = [{
+                "client_id": generateUUID(),
+                "name": null,
+                "amount": priceInCents,
+                "price_type": 0,
+                "tax": { "client_id": taxId }
+            }];
+
+            if (row.price2 !== null && row.price2 !== undefined && !isNaN(row.price2)) {
+                const price2InCents = Math.round((parseFloat(row.price2) || 0) * 100);
+                const taxId2 = resolveTaxId(row.tva2 !== null ? row.tva2 : row.tva);
+                itemPrices.push({
+                    "client_id": generateUUID(),
+                    "name": null,
+                    "amount": price2InCents,
+                    "price_type": 3,
+                    "tax": { "client_id": taxId2 }
+                });
+            }
+
             finalItems.push({
                 "name": row.name,
                 "client_id": itemId,
@@ -661,13 +726,7 @@
                 "kilo_price": 0.0,
                 "item_is_limonade": false,
                 "option_categories": [],
-                "prices": [{
-                    "client_id": generateUUID(),
-                    "name": null,
-                    "amount": priceInCents,
-                    "price_type": 0,
-                    "tax": { "client_id": taxId }
-                }],
+                "prices": itemPrices,
                 "macro_category": { "client_id": macroObj.id },
                 "shared_option_categories": []
             });
@@ -1237,7 +1296,7 @@
         }
 
         return {
-            csv: csvRows.join('\r\n') + '\r\n', // Garantit la présence d'un retour à la ligne final
+            csv: csvRows.join('\r\n') + '\r\n',
             count: articles.length,
             disabledCount: disabledCount
         };
@@ -1294,7 +1353,6 @@
         let productCategories = {};
         let productGroups = {};
 
-        // Cas 1: Format d'export récent avec "changes" (UPSERT)
         if (jsonObj.changes && Array.isArray(jsonObj.changes)) {
             let buttonGroupsMap = {};
 
@@ -1338,7 +1396,6 @@
                 }
             });
         } 
-        // Cas 2: Format d'export classique Popina (items / macro_categories / cards)
         else if (jsonObj.items && Array.isArray(jsonObj.items)) {
             let taxMap = {};
             let macroMap = {};
@@ -1413,9 +1470,6 @@
     }
 
     function downloadCsv(content, filename, withBom = true) {
-        // Le BOM (\ufeff) indique à Excel que le fichier est en UTF-8 : sans lui,
-        // Excel suppose l'ancien encodage ANSI et les accents s'affichent "Ã©" au lieu de "é".
-        // SmartTDE exige au contraire l'absence de BOM (withBom=false pour cet export).
         const parts = withBom ? ['\ufeff', content] : [content];
         const blob = new Blob(parts, { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
@@ -1428,5 +1482,5 @@
         document.body.removeChild(link);
     }
 </script>
-</body>
-</html>
+
+</body></html>
