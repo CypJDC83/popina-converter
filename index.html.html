@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Converter - Tech Edition by cyp</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #38bdf8;
+            --accent-hover: #0284c7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'JetBrains Mono', Consolas, -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            margin: 0;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tech-badge {
+            background-color: #0369a1;
+            color: #e0f2fe;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .author-tag {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--text-main);
+            border-color: var(--accent);
+            background: #0284c722;
+        }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.25rem;
+            border: 1px solid var(--border);
+            margin-bottom: 1.25rem;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            font-size: 1rem;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.3rem;
+        }
+
+        .form-group input {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.4rem 0.6rem;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .input-btn-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .input-btn-group input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .btn-secondary {
+            background-color: #475569;
+            color: white;
+            border: none;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.75rem;
+            font-family: inherit;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: fit-content;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-secondary:hover { background-color: #334155; }
+
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            background: #0f172a55;
+            transition: all 0.2s;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--accent);
+            background: #0284c711;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-weight: bold;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: var(--accent-hover); color: white; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th { background-color: #0f172a; color: var(--accent); }
+
+        td[contenteditable="true"] {
+            background: #0f172a88;
+            outline: 1px dashed var(--accent);
+            cursor: text;
+        }
+
+        td[contenteditable="true"]:focus {
+            background: #0284c733;
+            outline: 2px solid var(--accent);
+        }
+
+        .log-console {
+            background: #000;
+            color: #4ade80;
+            font-family: monospace;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            max-height: 120px;
+            overflow-y: auto;
+            margin-top: 1rem;
+            border: 1px solid #1e293b;
+        }
+
+        .status {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .status.success { color: #22c55e; }
+        .status.error { color: #ef4444; }
+
+        .hint-tag {
+            font-size: 0.75rem;
+            color: var(--warning);
+            margin-top: 0.5rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v2.9</span> <span class="author-tag">by cyp</span></h1>
+        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Fix Typo Key Popina Schema</div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('tab-json')">CSV Popina ➔ JSON BO</button>
+        <button class="tab-btn" onclick="switchTab('tab-nova')">Nova ➔ CSV Popina</button>
+        <button class="tab-btn" onclick="switchTab('tab-tde')">Nova ➔ SmartTDE</button>
+        <button class="tab-btn" onclick="switchTab('tab-reverse')">JSON Popina ➔ CSV</button>
+    </div>
+
+    <!-- TAB 1: POPINA JSON -->
+    <div id="tab-json" class="tab-content active">
+        <div class="card">
+            <h3>⚙️ Informations de l'Établissement</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="ticket_name">Nom du commerce</label>
+                    <input type="text" id="ticket_name" placeholder="Ex: Mon Commerce">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_company">SIRET / SIREN</label>
+                    <input type="text" id="ticket_company" placeholder="Ex: 123 456 789 00012">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_tva">N° TVA Intracommunautaire</label>
+                    <div class="input-btn-group">
+                        <input type="text" id="ticket_tva" placeholder="Saisir ou générer">
+                        <button type="button" class="btn-secondary" onclick="calculerTVA()">Générer TVA</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ticket_naf">Code NAF / APE</label>
+                    <input type="text" id="ticket_naf" placeholder="Ex: 1071C">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_address">Adresse</label>
+                    <input type="text" id="ticket_address" placeholder="Ex: 12 Rue de la République">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_zip">Code Postal</label>
+                    <input type="text" id="ticket_zip" placeholder="Ex: 75001">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_city">Ville</label>
+                    <input type="text" id="ticket_city" placeholder="Ex: Paris">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_phone">Téléphone</label>
+                    <input type="text" id="ticket_phone" placeholder="Ex: 01 23 45 67 89">
+                </div>
+                <div class="form-group">
+                    <label for="gerant_code">Code vendeur (Gérant)</label>
+                    <input type="text" id="gerant_code" value="0000">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📂 Importer votre fichier CSV Popina</h3>
+            <div class="drop-zone" id="dropZoneJson">
+                <p>Glissez-déposez votre fichier <strong>.csv</strong> au format Popina ici ou cliquez pour choisir un fichier.</p>
+                <input type="file" id="fileInputJson" accept=".csv" style="display: none;">
+            </div>
+            <div id="logJson" class="log-console" style="display: block;"></div>
+        </div>
+
+        <div class="card" id="previewCard" style="display: none;">
+            <h3>📊 Aperçu &amp; Édition directe des données</h3>
+            <span class="hint-tag">💡 Astuce : Vous pouvez cliquer sur les cellules pour modifier directement les textes, prix ou TVA avant l'export.</span>
+            <div style="overflow-x: auto;">
+                <table id="previewTable">
+                    <thead>
+                        <tr>
+                            <th>Groupe</th>
+                            <th>Famille</th>
+                            <th>Nom Article (Éditable)</th>
+                            <th>Prix Sur Place (€)</th>
+                            <th>TVA Sur Place (%)</th>
+                            <th>Prix Emporter (€)</th>
+                            <th>TVA Emporter (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn" id="downloadBtn">📥 Télécharger le JSON Nouveau BO Popina</button>
+            <div class="status success" id="jsonStatus"></div>
+        </div>
+    </div>
+
+    <!-- TAB 2: NOVA TO POPINA -->
+    <div id="tab-nova" class="tab-content">
+        <div class="card">
+            <h3>📂 Conversion Caisse Nova ➔ CSV Popina</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Glissez votre fichier <code>prog_nova.csv</code>. Le convertisseur associe automatiquement Groupe, Famille et gère la limite de 48 articles.
+            </p>
+            <div class="drop-zone" id="dropZoneNova">
+                <p>Glissez votre fichier <strong>prog_nova.csv</strong> ici</p>
+                <input type="file" id="fileInputNova" accept=".csv" style="display: none;">
+            </div>
+            <div class="status" id="novaStatus"></div>
+            <div id="logNova" class="log-console" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- TAB 3: NOVA TO SMARTTDE -->
+    <div id="tab-tde" class="tab-content">
+        <div class="card">
+            <h3>📂 Conversion Caisse Nova ➔ SmartTDE CSV</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Glissez votre fichier <code>prog_nova.csv</code> pour le convertir au format SmartTDE (prix en centimes, pas de TVA).
+            </p>
+            <div class="drop-zone" id="dropZoneTde">
+                <p>Glissez votre fichier <strong>prog_nova.csv</strong> ici</p>
+                <input type="file" id="fileInputTde" accept=".csv" style="display: none;">
+            </div>
+            <div class="status" id="tdeStatus"></div>
+            <div id="logTde" class="log-console" style="display:none;"></div>
+        </div>
+    </div>
+
+    <!-- TAB 4: REVERSE (JSON POPINA TO CSV) -->
+    <div id="tab-reverse" class="tab-content">
+        <div class="card">
+            <h3>🔄 Extracteur : JSON Popina ➔ CSV Tableur</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">
+                Déposez un fichier <code>.json</code> d'export de Back-Office Popina pour extraire sa carte et obtenir un fichier CSV propre.
+            </p>
+            <div class="drop-zone" id="dropZoneReverse">
+                <p>Glissez votre fichier <strong>.json</strong> Popina ici</p>
+                <input type="file" id="fileInputReverse" accept=".json" style="display: none;">
+            </div>
+            <div class="status" id="reverseStatus"></div>
+            <div id="logReverse" class="log-console" style="display:none;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        const btnIndex = ['tab-json', 'tab-nova', 'tab-tde', 'tab-reverse'].indexOf(tabId);
+        if (btnIndex !== -1) document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
+
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    function log(consoleId, msg) {
+        const consoleEl = document.getElementById(consoleId);
+        consoleEl.style.display = 'block';
+        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function calculerTVA() {
+        const companyField = document.getElementById('ticket_company');
+        const tvaField = document.getElementById('ticket_tva');
+        if (!companyField) return;
+
+        const digits = companyField.value.replace(/\D/g, '');
+        if (digits.length >= 9) {
+            const sirenStr = digits.substring(0, 9);
+            const sirenNum = parseInt(sirenStr, 10);
+            const cle = (12 + 3 * (sirenNum % 97)) % 97;
+            const cleStr = cle < 10 ? '0' + cle : '' + cle;
+            tvaField.value = `FR${cleStr}${sirenStr}`;
+        } else {
+            alert("Veuillez d'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.");
+        }
+    }
+
+    function generateUUID() {
+        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+            return window.crypto.randomUUID();
+        }
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function sanitizeName(str) {
+        if (!str) return "";
+        let clean = String(str)
+            .replace(/[\x00-\x1F\x7F-\x9F]/g, '')
+            .replace(/\u00A0/g, ' ')
+            .trim();
+        if (clean.length > 254) clean = clean.substring(0, 254);
+        return clean;
+    }
+
+    // --- SCRIPT 1 : CSV POPINA VERS JSON NOVO BO ---
+    const dropZoneJson = document.getElementById('dropZoneJson');
+    const fileInputJson = document.getElementById('fileInputJson');
+    const previewCard = document.getElementById('previewCard');
+    const previewTableBody = document.querySelector('#previewTable tbody');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let parsedRowsData = [];
+
+    dropZoneJson.addEventListener('click', () => fileInputJson.click());
+    dropZoneJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneJson.classList.add('dragover'); });
+    dropZoneJson.addEventListener('dragleave', () => dropZoneJson.classList.remove('dragover'));
+    dropZoneJson.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneJson.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileJson(e.dataTransfer.files[0]);
+    });
+    fileInputJson.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileJson(e.target.files[0]);
+    });
+
+    function handleFileJson(file) {
+        log('logJson', `Chargement de ${file.name}...`);
+        const reader = new FileReader();
+        reader.onload = function(e) { parseCSVJson(e.target.result); };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function parseCSVLine(line, delimiter) {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === delimiter && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += char;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
+    function parseCSVJson(text) {
+        const lines = text.split(/\r\n|\n/);
+        if (lines.length < 2) { alert('Le fichier CSV est vide.'); return; }
+
+        const delimiter = text.includes(';') ? ';' : ',';
+        const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase());
+
+        let idxGroupe = headers.findIndex(h => h.includes('groupe') || h.includes('macro'));
+        let idxCat = headers.findIndex((h, idx) => idx !== idxGroupe && (h.includes('famille') || h.includes('categorie') || h.includes('sous-cat')));
+        let idxNom = headers.findIndex(h => h.includes('description') || h.includes('nom') || h.includes('article'));
+        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h === 'prix');
+        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h === 'tva');
+        let idxPrix2 = headers.findIndex(h => h.includes('prix emporter') || h.includes('prix 2'));
+        let idxTva2 = headers.findIndex(h => h.includes('tva emporter') || h.includes('tva 2'));
+
+        if (idxGroupe === -1) {
+            if (headers.length >= 2 && (headers[0].includes('cat') || headers[0].includes('famille')) && (headers[1].includes('cat') || headers[1].includes('famille'))) {
+                idxGroupe = 0; idxCat = 1;
+            } else {
+                idxGroupe = -1; if (idxCat === -1) idxCat = 0;
+            }
+        }
+
+        if (idxNom === -1) idxNom = 2;
+        if (idxPrix === -1) idxPrix = 3;
+        if (idxTva === -1) idxTva = 4;
+        if (idxPrix2 === -1 && headers.length > 5) idxPrix2 = 5;
+        if (idxTva2 === -1 && headers.length > 6) idxTva2 = 6;
+
+        previewTableBody.innerHTML = '';
+        parsedRowsData = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cols = parseCSVLine(lines[i], delimiter);
+
+            const groupeName = idxGroupe >= 0 ? sanitizeName(cols[idxGroupe] || 'Groupe 1') : 'Groupe 1';
+            const categoryName = sanitizeName(cols[idxCat] || 'Général');
+            const name = sanitizeName(cols[idxNom] || '');
+            const rawPrix = (cols[idxPrix] || '0').replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawPrix2 = idxPrix2 >= 0 && cols[idxPrix2] ? cols[idxPrix2].replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
+            const rawTva2 = idxTva2 >= 0 && cols[idxTva2] ? cols[idxTva2].replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
+
+            if (name) {
+                const itemObj = {
+                    groupe: groupeName,
+                    category: categoryName,
+                    name: name,
+                    price: parseFloat(rawPrix) || 0,
+                    tva: rawTva || "20",
+                    price2: rawPrix2 !== '' ? (parseFloat(rawPrix2) || 0) : null,
+                    tva2: rawTva2 !== '' ? rawTva2 : (rawPrix2 !== '' ? (rawTva || "20") : null)
+                };
+                parsedRowsData.push(itemObj);
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${escapeHtml(itemObj.groupe)}</td>
+                    <td>${escapeHtml(itemObj.category)}</td>
+                    <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${escapeHtml(itemObj.name)}</strong></td>
+                    <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.price.toFixed(2))}</td>
+                    <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.tva)}</td>
+                    <td contenteditable="true" data-field="price2" data-index="${parsedRowsData.length - 1}">${itemObj.price2 !== null ? escapeHtml(itemObj.price2.toFixed(2)) : ''}</td>
+                    <td contenteditable="true" data-field="tva2" data-index="${parsedRowsData.length - 1}">${itemObj.tva2 !== null ? escapeHtml(itemObj.tva2) : ''}</td>
+                `;
+                previewTableBody.appendChild(tr);
+            }
+        }
+
+        previewTableBody.querySelectorAll('td[contenteditable="true"]').forEach(td => {
+            td.addEventListener('blur', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'), 10);
+                const field = e.target.getAttribute('data-field');
+                let val = e.target.innerText.trim();
+                let invalid = false;
+
+                if (field === 'name') {
+                    if (!val) { invalid = true; val = parsedRowsData[idx].name; e.target.innerText = val; }
+                } else if (field === 'price' || field === 'price2') {
+                    if (val === '' && field === 'price2') {
+                        val = null;
+                        e.target.innerText = '';
+                    } else {
+                        const parsed = parseFloat(val.replace(',', '.'));
+                        if (isNaN(parsed) || parsed < 0) { invalid = true; }
+                        val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+                        e.target.innerText = val.toFixed(2);
+                    }
+                } else if (field === 'tva' || field === 'tva2') {
+                    if (val === '' && field === 'tva2') {
+                        val = null;
+                        e.target.innerText = '';
+                    } else {
+                        const parsed = parseFloat(val.replace(',', '.'));
+                        if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
+                    }
+                }
+
+                e.target.style.outlineColor = invalid ? 'var(--danger)' : '';
+                e.target.style.background = invalid ? '#ef444422' : '';
+
+                parsedRowsData[idx][field] = val;
+                if (invalid) {
+                    log('logJson', `⚠ Valeur invalide pour "${parsedRowsData[idx].name}" (${field}), vérifiez avant export.`);
+                } else {
+                    log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
+                }
+            });
+        });
+
+        previewCard.style.display = 'block';
+        log('logJson', `Parsing réussi : ${parsedRowsData.length} articles extraits.`);
+    }
+
+    downloadBtn.addEventListener('click', () => {
+        const jsonStatus = document.getElementById('jsonStatus');
+        if (!parsedRowsData.length) {
+            jsonStatus.className = 'status error';
+            jsonStatus.textContent = "Aucune donnée à exporter. Importez d'abord un fichier CSV.";
+            return;
+        }
+
+        const storeName = sanitizeName(document.getElementById('ticket_name').value) || "MON COMMERCE";
+        const companySiret = sanitizeName(document.getElementById('ticket_company').value);
+        const numTva = sanitizeName(document.getElementById('ticket_tva').value);
+        const codeNaf = sanitizeName(document.getElementById('ticket_naf').value);
+        const address = sanitizeName(document.getElementById('ticket_address').value);
+        const zip = sanitizeName(document.getElementById('ticket_zip').value);
+        const city = sanitizeName(document.getElementById('ticket_city').value);
+        const phone = sanitizeName(document.getElementById('ticket_phone').value);
+        const gerantCode = sanitizeName(document.getElementById('gerant_code').value) || "0000";
+        const nowISO = new Date().toISOString();
+
+        function resolveTaxId(tvaInput) {
+            const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
+            if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
+            if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
+            if (Math.abs(num - 10) < 0.5) return "78de92d2-57ce-4998-8faf-364a806052ec";
+            if (Math.abs(num - 5.5) < 0.5) return "3515EF97-8B72-4AEF-A3EF-8954E240D11A";
+            return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
+        }
+
+        const macroCategoriesMap = new Map();
+        const categoriesMap = new Map();
+        const macroCatFamilyCounter = new Map();
+        const finalItems = [];
+
+        parsedRowsData.forEach(row => {
+            if (!macroCategoriesMap.has(row.groupe)) {
+                macroCategoriesMap.set(row.groupe, { id: generateUUID(), index: macroCategoriesMap.size });
+            }
+            const macroObj = macroCategoriesMap.get(row.groupe);
+
+            if (!macroCatFamilyCounter.has(macroObj.id)) {
+                macroCatFamilyCounter.set(macroObj.id, 0);
+            }
+
+            const catKey = `${row.groupe}__${row.category}`;
+            if (!categoriesMap.has(catKey)) {
+                const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
+                macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
+
+                categoriesMap.set(catKey, {
+                    id: generateUUID(),
+                    name: row.category,
+                    macroId: macroObj.id,
+                    indexInGroup: familyIndexInGroup,
+                    positions: []
+                });
+            }
+            const catObj = categoriesMap.get(catKey);
+
+            const itemId = generateUUID();
+            const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
+            const taxId = resolveTaxId(row.tva);
+
+            const itemPrices = [{
+                "client_id": generateUUID(),
+                "name": null,
+                "amount": priceInCents,
+                "price_type": 0,
+                "tax": { "client_id": taxId }
+            }];
+
+            if (row.price2 !== null && row.price2 !== undefined && !isNaN(row.price2)) {
+                const price2InCents = Math.round((parseFloat(row.price2) || 0) * 100);
+                const taxId2 = resolveTaxId(row.tva2 !== null ? row.tva2 : row.tva);
+                itemPrices.push({
+                    "client_id": generateUUID(),
+                    "name": null,
+                    "amount": price2InCents,
+                    "price_type": 3,
+                    "tax": { "client_id": taxId2 }
+                });
+            }
+
+            finalItems.push({
+                "name": row.name,
+                "client_id": itemId,
+                "modular_price": false,
+                "preparation_step_index": 1,
+                "screen_name": null,
+                "kitchen_name": null,
+                "sku": null,
+                "date_creation": nowISO,
+                "barcode": null,
+                "is_weight_price": false,
+                "kilo_price": 0.0,
+                "item_is_limonade": false,
+                "option_categories": [],
+                "prices": itemPrices,
+                "macro_category": { "client_id": macroObj.id },
+                "shared_option_categories": []
+            });
+
+            catObj.positions.push({
+                "client_id": generateUUID(),
+                "highlight_level": 0,
+                "brightness_level": 0,
+                "alternate_color": -1,
+                "index": catObj.positions.length,
+                "item": { "client_id": itemId }
+            });
+        });
+
+        const parsedMacroCategories = [];
+        macroCategoriesMap.forEach((val, gName) => {
+            parsedMacroCategories.push({
+                "client_id": val.id,
+                "name": gName,
+                "index": val.index,
+                "color": 0,
+                "image": "Fichier 9",
+                "preparation_step_index": null,
+                "number_of_categories": 8
+            });
+        });
+
+        const parsedCardCategories = [];
+        categoriesMap.forEach((val) => {
+            parsedCardCategories.push({
+                "client_id": val.id,
+                "name": val.name,
+                "index": val.indexInGroup,
+                "number_of_columns": 2,
+                "number_of_lines": 8,
+                "positions": val.positions,
+                "macro_category": { "client_id": val.macroId }
+            });
+        });
+
+        const targetPaymentMethods = [
+            { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
+            { "client_id": "F0CC63FF-2E20-40A4-B1B1-27C02177D63D", "name": "Mews", "mode": 11, "index": 9, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "F3DD06FF-71CE-4800-92C7-BAFCF6D3A5E7", "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
+            { "client_id": "9DD1C2C1-A0B5-436B-88DF-A9145227D555", "name": "Deliveroo", "mode": 15, "index": 12, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "AFEA6F7D-3697-4BE3-BD94-372B046F483A", "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "0E59B53C-1D23-419D-8ECC-1ED878E82866", "name": "Chèque", "mode": 3, "index": 3, "enabled": true, "change": false, "drawer": true, "should_print": false },
+            { "client_id": "D74176CF-FFD8-428F-BCCB-43A71D820853", "name": "Avoir", "mode": 5, "index": 5, "enabled": true, "change": false, "drawer": true, "should_print": true },
+            { "client_id": "8E54A99A-A9E8-4B15-A400-AE81092CEF8B", "name": "Uber eats", "mode": 13, "index": 7, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "18652D17-5826-4B84-9E97-673C8B5CD54B", "name": "American Express", "mode": 4, "index": 4, "enabled": true, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "6DDFB5C7-C1B1-43A9-979A-6ADAC3808042", "name": "Resto Flash", "mode": 10, "index": 8, "enabled": false, "change": false, "drawer": true, "should_print": false },
+            { "client_id": "D3158781-53BE-40C4-BFF3-B596A421F34A", "name": "Foxorder", "mode": 9, "index": 6, "enabled": false, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "2528fdb4-7c79-42e9-955d-22310dcc39c7", "name": "iZettle", "mode": 7, "index": 11, "enabled": false, "change": true, "drawer": false, "should_print": false },
+            { "client_id": "B7D76868-5AF6-46E6-BCFD-DD33CA69A739", "name": "Compte client", "mode": 8, "index": 10, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "B97D0350-92BF-4480-9B08-2ECDBCB11ED8", "name": "Cagnotte", "mode": 14, "index": 11, "enabled": false, "change": false, "drawer": false, "should_print": false },
+            { "client_id": "a11686af-2507-4104-bba8-141f5bfd7682", "name": "Virement", "mode": 20, "index": 15, "enabled": false, "change": true, "drawer": true, "should_print": false }
+        ];
+
+        const targetRooms = [
+            { "client_id": "B9465AAF-B7FB-4B16-A664-8FE3AD4BA4B4", "name": "A emporter", "type": 2, "price_type": 3, "index": 7, "enabled": false, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": true, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] },
+            { "client_id": "014FB172-5E2D-49F2-8CB3-46F8F96EA6A2", "name": "Salle 1", "type": 0, "price_type": 0, "index": 1, "enabled": true, "date_creation": nowISO, "setting_ask_number_guests": true, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [
+                { "client_id": "58B4F9D3-0EE0-4699-8D50-DB37B6E20B69", "name": "6", "shape": 0, "position_x": 234, "position_y": 234, "date_creation": nowISO },
+                { "client_id": "C15D1EF4-6B56-47C1-8EFC-B09130757C19", "name": "1", "shape": 0, "position_x": 126, "position_y": 126, "date_creation": nowISO },
+                { "client_id": "6C0EABB3-6A57-4BD0-AAF2-C228CE575751", "name": "7", "shape": 0, "position_x": 342, "position_y": 234, "date_creation": nowISO },
+                { "client_id": "B32F0993-1876-4A52-86CB-0A3132DA773D", "name": "8", "shape": 0, "position_x": 450, "position_y": 234, "date_creation": nowISO },
+                { "client_id": "0860542F-57D4-4383-B525-668977B0F852", "name": "3", "shape": 0, "position_x": 342, "position_y": 126, "date_creation": nowISO },
+                { "client_id": "BD07212C-E05B-465B-A9D9-76F848125314", "name": "2", "shape": 0, "position_x": 234, "position_y": 126, "date_creation": nowISO },
+                { "client_id": "402FAD76-6E0C-4805-B7E0-58AB2BBA1F45", "name": "4", "shape": 0, "position_x": 450, "position_y": 126, "date_creation": nowISO },
+                { "client_id": "F12A952F-74F6-43FD-A555-AAE1520E5FED", "name": "5", "shape": 0, "position_x": 126, "position_y": 234, "date_creation": nowISO }
+            ]},
+            { "client_id": "D403C194-E0D4-40C4-AEA6-09E751B7F14A", "name": "Comptoir", "type": 1, "price_type": 2, "index": 6, "enabled": true, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": true, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] },
+            { "client_id": "50A0B7B2-928D-42CF-ACAD-CB0C94F982D3", "name": "Salle 4", "type": 0, "price_type": 0, "index": 4, "enabled": false, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": true, "should_send_to_preparation_on_close": true, "tables": [] },
+            { "client_id": "200A2EE8-276E-48B3-97D0-70E79EC8C124", "name": "Salle 2", "type": 0, "price_type": 0, "index": 2, "enabled": false, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] },
+            { "client_id": "C612AC82-C9D5-4751-89AF-AE03A1F12DF6", "name": "Salle 3", "type": 0, "price_type": 0, "index": 3, "enabled": false, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] },
+            { "client_id": "af05251b-9a05-4eaa-ba3e-e8ca8b731f78", "name": "Livraison", "type": 3, "price_type": 0, "index": 7, "enabled": false, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": false, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": false, "tables": [] }
+        ];
+
+        const targetPriceTypes = [
+            { "client_id": "E6D99B0E-0145-40DF-941A-FA1C2F1AE554", "name": "A emporter", "price_type": 3, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "AFD68C4B-66DF-408A-BD10-3966970B355B", "name": "Comptoir", "price_type": 2, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "B1F8F670-2753-406B-88E7-5DA7C991A203", "name": "Happy Hour", "price_type": 1, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "98E1BF35-D34E-400B-9536-C27F7BCA7E92", "name": "Prix Spécial", "price_type": 5, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "4C80E382-C753-4C6C-9CFF-B208A055DC12", "name": "Prix au poids (Kg)", "price_type": 6, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "A0864129-2860-4B51-9CDC-81A208B51368", "name": "Terrasse", "price_type": 4, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
+            { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
+        ];
+
+        const finalJsonData = {
+            "name": storeName,
+            "locale": "fr_FR",
+            "last_update": nowISO,
+            "next_avoir_number": 0,
+            "ticket_name": storeName,
+            "ticket_address": address,
+            "ticket_text": "Champ libre",
+            "ticket_company": companySiret ? ` ${companySiret} ` : "",
+            "ticket_phone": phone,
+            "ticket_zip": zip,
+            "ticket_city": city,
+            "ticket_country": "France",
+            "ticket_url": "",
+            "ticket_naf": codeNaf ? ` ${codeNaf} ` : "",
+            "ticket_tva": numTva ? ` ${numTva} ` : "",
+            "ticket_footer_note": "Merci de votre visite",
+            "ticket_image_url": "https://firebasestorage.googleapis.com:443/v0/b/jalia-prod.appspot.com/o/ticket-13.jpg?alt=media&token=a74ec29d-bda3-4a1e-8fcb-46e6dc2a7138",
+            "ticket_company_name": storeName,
+            "setting_cut_kitchen_ticket": false,
+            "setting_only_first_kitchen_ticket": false,
+            "setting_send_preparation_on": true,
+            "setting_happy_hour_on": true,
+            "setting_detailed_report": true,
+            "setting_total_raw": false,
+            "setting_not_claim": false,
+            "setting_close_after_transmitted": true,
+            "setting_send_tills": true,
+            "setting_send_tills_live": true,
+            "setting_use_qrcode": false,
+            "setting_manual_steps_activated": true,
+            "setting_print_on_pay": true,
+            "number_of_preparation_steps": 3,
+            "setting_ask_cash_in": false,
+            "setting_group_item_kitchen": true,
+            "setting_not_claim_content": false,
+            "setting_allow_gap_till": true,
+            "setting_detailed_menus": false,
+            "setting_compact_order": true,
+            "setting_print_menu_on_preparation": false,
+            "setting_print_option_group_on_preparation": false,
+            "number_of_lines": 8,
+            "number_of_menus": 8,
+            "number_of_selections": 8,
+            "exercice_date": nowISO,
+            "macro_categories": parsedMacroCategories,
+            "taxes": [
+                { "client_id": "78de92d2-57ce-4998-8faf-364a806052ec", "name": "TVA 10%", "percentage": 1000 },
+                { "client_id": "A58D3A44-34B1-46FC-8481-8101542DA4DE", "name": "TVA 20%", "percentage": 2000 },
+                { "client_id": "3515EF97-8B72-4AEF-A3EF-8954E240D11A", "name": "TVA 5,5%", "percentage": 550 }
+            ],
+            "shared_option_categories": [
+                {
+                    "client_id": "ED23B5F8-81DD-41A1-8B9C-A8F01C65AB14",
+                    "index": 1,
+                    "name": "Cuisson",
+                    "is_mandatory": true,
+                    "is_multiple": false,
+                    "options": [
+                        { "client_id": "EF48D84E-A6F3-4FCE-A1BD-ABA2C5688D97", "index": 2, "name": "À Point", "price": 0 },
+                        { "client_id": "80366CCF-AE4B-46B4-BA00-E5B1624385AD", "index": 0, "name": "Bleu", "price": 0 },
+                        { "client_id": "8FF46C2F-0BCF-4202-A8CE-1C80762A6A1D", "index": 1, "name": "Saignant", "price": 0 },
+                        { "client_id": "F7CDCA4E-8966-4583-88C1-E811F6147E2A", "index": 3, "name": "Bien cuit", "price": 0 }
+                    ]
+                }
+            ],
+            "payment_methods": targetPaymentMethods,
+            "items": finalItems,
+            "printers": [],
+            "places": [
+                { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
+                { "client_id": "CBC89272-5DC4-4E60-B2E4-A0650E41822F", "creation_date": nowISO, "name": "Bar", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] }
+            ],
+            "place_printer_links": [],
+            "cards": [{
+                "client_id": generateUUID(),
+                "name": "Carte",
+                "categories": parsedCardCategories,
+                "selections": [],
+                "menus": []
+            }],
+            "people": [
+                {
+                    "client_id": "4AC6F559-74DB-45ED-AAB8-14B9DAAC6851",
+                    "name": "Gérant",
+                    "password": gerantCode,
+                    "pass_key": gerantCode,
+                    "is_root": true,
+                    "right_person": true,
+                    "right_till": true,
+                    "right_report": true,
+                    "right_all_orders": true,
+                    "right_apply_discount": true,
+                    "right_edit_discount": true,
+                    "right_delete_order": null,
+                    "right_cancel_order": true,
+                    "right_stats_till": true,
+                    "right_card": true,
+                    "right_device": true,
+                    "right_custom_price": true,
+                    "right_payment_type": true,
+                    "right_payment_order": true,
+                    "qrcode": null,
+                    "key_dallas": null,
+                    "color_blind_mode_on": false,
+                    "right_automatic_cash_drawer": true,
+                    "right_full_stats": true,
+                    "right_happy_hour": true,
+                    "right_payed_customer": true,
+                    "right_client": true,
+                    "right_manual_cash_drawer": true,
+                    "right_ownership": true,
+                    "right_edit_price_type": true,
+                    "right_transfer_order": true,
+                    "right_cancel_order_after_note": true,
+                    "right_edit_justificatif": true,
+                    "right_update_order_after_note": true
+                }
+            ],
+            "rooms": targetRooms,
+            "stock": [],
+            "discounts": [
+                { "client_id": "7BD93B09-2744-4018-9FDB-95A96F323FE3", "amount": 10000, "name": "Offert", "discount_type": 1, "index": 0, "date_creation": nowISO, "apply_on_units": false }
+            ],
+            "price_types": targetPriceTypes,
+            "cash_movement_motifs": [],
+            "third_parties": [],
+            "bookings": [],
+            "customers": []
+        };
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "programmation") + "_popina.json";
+        downloadAnchor.setAttribute("download", fileName);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+
+        jsonStatus.className = 'status success';
+        jsonStatus.textContent = `Export réussi ! ${finalItems.length} article(s), ${parsedMacroCategories.length} groupe(s) exporté(s).`;
+    });
+
+
+    // --- SCRIPT 2 : CAISSE NOVA VERS CSV POPINA ---
+    const dropZoneNova = document.getElementById('dropZoneNova');
+    const fileInputNova = document.getElementById('fileInputNova');
+    const novaStatus = document.getElementById('novaStatus');
+
+    dropZoneNova.addEventListener('click', () => fileInputNova.click());
+    dropZoneNova.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNova.classList.add('dragover'); });
+    dropZoneNova.addEventListener('dragleave', () => dropZoneNova.classList.remove('dragover'));
+    dropZoneNova.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneNova.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileNova(e.dataTransfer.files[0]);
+    });
+    fileInputNova.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileNova(e.target.files[0]);
+    });
+
+    function handleFileNova(file) {
+        novaStatus.className = 'status';
+        novaStatus.textContent = "Traitement en cours...";
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result;
+                const result = processNovaToPopina(text);
+                downloadCsv(result.csv, "prog_popina_converti.csv");
+                novaStatus.className = 'status success';
+                novaStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
+            } catch (err) {
+                console.error(err);
+                novaStatus.className = 'status error';
+                novaStatus.textContent = "Erreur lors de la conversion du fichier.";
+            }
+        };
+        reader.readAsText(file, 'ISO-8859-1');
+    }
+
+    function formatNumber(val) {
+        if (val === "" || val === null || val === undefined) return "";
+        const num = parseFloat(val);
+        if (isNaN(num)) return "";
+        return num.toFixed(2);
+    }
+
+    // CORRECTION TVA NOVA : 0 = 10% / 1 = 20% / 2 = 5.5%
+    function getTvaValue(taxCode) {
+        if (taxCode === undefined || taxCode === null) return 20.0;
+        
+        let clean = String(taxCode).replace('%', '').replace(',', '.').trim();
+        if (clean === "") return 20.0;
+
+        let num = parseFloat(clean);
+        if (isNaN(num)) return 20.0;
+
+        if (num === 20 || num === 10 || num === 5.5) {
+            return num;
+        }
+
+        switch (String(Math.round(num))) {
+            case "0": return 10.0; // 0 -> 10%
+            case "1": return 20.0; // 1 -> 20%
+            case "2": return 5.5;  // 2 -> 5.5%
+            case "3": return 0.0;  // 3 -> 0%
+            default: return 20.0;
+        }
+    }
+
+    function processNovaToPopina(content) {
+        const lines = content.split(/\r?\n/);
+        
+        let groups = {};
+        let depts = {};
+        let rawArticles = [];
+        let disabledCount = 0;
+
+        let currentSection = "";
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+
+            if (line.startsWith('G;DESC;')) {
+                currentSection = "G";
+                continue;
+            } else if (line.startsWith('D;TYPE;')) {
+                currentSection = "D";
+                continue;
+            } else if (line.startsWith('A;TYPE;')) {
+                currentSection = "A";
+                continue;
+            } else if (line.startsWith('FM;') || line.startsWith('FIX;') || line.startsWith('W;') || line.startsWith('WPROF;') || line.startsWith('S;') || line.startsWith('M;') || line.startsWith('K;') || line.startsWith('C;') || line.startsWith('CU;') || line.startsWith('DOC;')) {
+                currentSection = "OTHER";
+                continue;
+            }
+
+            const parts = line.split(';');
+
+            if (currentSection === "G" && parts.length > 1) {
+                groups[parts[0]] = parts[1];
+            } else if (currentSection === "D" && parts.length > 9) {
+                depts[parts[0]] = parts[9];
+            } else if (currentSection === "A" && parts.length > 28) {
+                const disabled = parts[9];
+                const tax1Code = parts[2]; // Code TVA Sur Place (TAX1)
+                const tax2Code = parts[3]; // Code TVA À Emporter (TAX2)
+                const name = parts[19];
+                const groupId = parts[20];
+                const price1 = parseFloat(parts[27].replace(',', '.')) || 0;
+                const price2 = parseFloat(parts[28].replace(',', '.')) || 0;
+                const deptId = parts[71];
+
+                if (disabled === "1" || !name || name === "0" || name.length < 2) {
+                    if (disabled === "1") disabledCount++;
+                    continue;
+                }
+
+                const tvaSurPlace = getTvaValue(tax1Code);
+                const tvaEmporter = getTvaValue(tax2Code !== "" ? tax2Code : tax1Code);
+
+                rawArticles.push({
+                    name: sanitizeName(name),
+                    groupId: groupId,
+                    deptId: deptId,
+                    priceSurPlace: price1,
+                    tvaSurPlace: tvaSurPlace,
+                    priceEmporter: price2 > 0 ? price2 : "",
+                    tvaEmporter: price2 > 0 ? tvaEmporter : ""
+                });
+            }
+        }
+
+        let popinaTree = {};
+
+        for (let art of rawArticles) {
+            let rawCat = groups[art.groupId] || art.groupId || "DIVERS";
+            let rawSub = depts[art.deptId] || art.deptId || rawCat;
+
+            let catName = sanitizeName(rawCat);
+            let subCatName = sanitizeName(rawSub);
+
+            if (!catName || catName === "0") catName = "DIVERS";
+            if (!subCatName || subCatName === "0") subCatName = catName;
+
+            if (!popinaTree[catName]) {
+                if (Object.keys(popinaTree).length >= 13) {
+                    let keys = Object.keys(popinaTree);
+                    catName = keys[12];
+                } else {
+                    popinaTree[catName] = { subCats: {} };
+                }
+            }
+
+            let catObj = popinaTree[catName];
+
+            if (!catObj.subCats[subCatName]) {
+                let currentSubCatCount = Object.keys(catObj.subCats).length;
+                if (currentSubCatCount >= 15) {
+                    let subKeys = Object.keys(catObj.subCats);
+                    subCatName = subKeys[14];
+                } else {
+                    catObj.subCats[subCatName] = [];
+                }
+            }
+
+            catObj.subCats[subCatName].push(art);
+        }
+
+        const popinaHeader = [
+            "Sous-catégorie (Famille)",
+            "Sous-catégorie (Famille).1",
+            "Description (Nom article)",
+            "Prix Sur place (Prix 1)",
+            "TVA Sur place",
+            "Prix Emporter (Prix 2)",
+            "TVA Emporter",
+            "Prix Spécial (Happy Hour)",
+            "TVA Spécial",
+            "Code-Barres"
+        ];
+
+        let csvRows = [popinaHeader.join(';')];
+        let totalExportedCount = 0;
+
+        for (let cName in popinaTree) {
+            let subCats = popinaTree[cName].subCats;
+            for (let sName in subCats) {
+                let itemArray = subCats[sName];
+                let chunkSize = 48;
+
+                for (let i = 0; i < itemArray.length; i += chunkSize) {
+                    let chunk = itemArray.slice(i, i + chunkSize);
+                    let currentSubCatTitle = (i === 0) ? sName : sanitizeName(`${sName} ${Math.floor(i / chunkSize) + 1}`);
+
+                    for (let item of chunk) {
+                        let row = [
+                            `"${cName}"`,
+                            `"${currentSubCatTitle}"`,
+                            `"${item.name}"`,
+                            formatNumber(item.priceSurPlace),
+                            formatNumber(item.tvaSurPlace),
+                            formatNumber(item.priceEmporter),
+                            formatNumber(item.tvaEmporter),
+                            "", "", ""
+                        ];
+                        csvRows.push(row.join(';'));
+                        totalExportedCount++;
+                    }
+                }
+            }
+        }
+
+        return {
+            csv: csvRows.join('\r\n'),
+            count: totalExportedCount,
+            disabledCount: disabledCount
+        };
+    }
+
+
+    // --- SCRIPT 3 : CAISSE NOVA VERS CSV SMART-TDE ---
+    const dropZoneTde = document.getElementById('dropZoneTde');
+    const fileInputTde = document.getElementById('fileInputTde');
+    const tdeStatus = document.getElementById('tdeStatus');
+
+    dropZoneTde.addEventListener('click', () => fileInputTde.click());
+    dropZoneTde.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneTde.classList.add('dragover'); });
+    dropZoneTde.addEventListener('dragleave', () => dropZoneTde.classList.remove('dragover'));
+    dropZoneTde.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneTde.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileTde(e.dataTransfer.files[0]);
+    });
+    fileInputTde.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileTde(e.target.files[0]);
+    });
+
+    function handleFileTde(file) {
+        tdeStatus.className = 'status';
+        tdeStatus.textContent = "Traitement en cours...";
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const text = e.target.result;
+                const result = processNovaToTDE(text);
+                downloadCsv(result.csv, "prog_smartTDE_converti.csv", false);
+                tdeStatus.className = 'status success';
+                tdeStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s) au format SmartTDE (${result.disabledCount} article(s) désactivé(s) ignoré(s)).`;
+            } catch (err) {
+                console.error(err);
+                tdeStatus.className = 'status error';
+                tdeStatus.textContent = "Erreur lors de la conversion du fichier.";
+            }
+        };
+        reader.readAsText(file, 'ISO-8859-1');
+    }
+
+    function processNovaToTDE(content) {
+        const lines = content.split(/\r?\n/);
+        
+        let groups = {};
+        let depts = {};
+        let articles = [];
+        let disabledCount = 0;
+
+        let currentSection = "";
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line) continue;
+
+            if (line.startsWith('G;DESC;')) {
+                currentSection = "G";
+                continue;
+            } else if (line.startsWith('D;TYPE;')) {
+                currentSection = "D";
+                continue;
+            } else if (line.startsWith('A;TYPE;')) {
+                currentSection = "A";
+                continue;
+            } else if (line.startsWith('FM;') || line.startsWith('FIX;') || line.startsWith('W;') || line.startsWith('WPROF;') || line.startsWith('S;') || line.startsWith('M;') || line.startsWith('K;') || line.startsWith('C;') || line.startsWith('CU;') || line.startsWith('DOC;')) {
+                currentSection = "OTHER";
+                continue;
+            }
+
+            const parts = line.split(';');
+
+            if (currentSection === "G" && parts.length > 1) {
+                groups[parts[0]] = parts[1];
+            } else if (currentSection === "D" && parts.length > 9) {
+                depts[parts[0]] = parts[9];
+            } else if (currentSection === "A" && parts.length > 28) {
+                const disabled = parts[9];
+                const name = parts[19];
+                const groupId = parts[20];
+                const price1 = parseFloat(parts[27].replace(',', '.')) || 0;
+                const price2 = parseFloat(parts[28].replace(',', '.')) || 0;
+                const deptId = parts[71];
+
+                if (disabled === "1" || !name || name === "0" || name.length < 2) {
+                    if (disabled === "1") disabledCount++;
+                    continue;
+                }
+
+                let rawGroup = (groups[groupId] || groupId || "DIVERS").replace(/;/g, ' ').trim();
+                let rawDept = (depts[deptId] || deptId || rawGroup).replace(/;/g, ' ').trim();
+
+                if (!rawGroup || rawGroup === "0") rawGroup = "DIVERS";
+                if (!rawDept || rawDept === "0") rawDept = rawGroup;
+
+                const cleanName = name.replace(/;/g, ' ').trim();
+
+                const p1Cents = Math.round(price1 * 100);
+                const p2Cents = price2 > 0 ? Math.round(price2 * 100) : "";
+
+                articles.push({
+                    group: rawGroup,
+                    dept: rawDept,
+                    desc: cleanName,
+                    price1: p1Cents,
+                    price2: p2Cents
+                });
+            }
+        }
+
+        const tdeHeader = "#PLU;GROUP;DEPT;DESCRIPTION;LONG_DESCRIPTION;KP_PLU_NOTES;PRICE_1;PRICE_2;PRICE_3;PRICE_4;PRICE_5;PRICE_6;BARCODE;PREFERED;ON_TDE";
+        let csvRows = [tdeHeader];
+
+        for (let art of articles) {
+            let row = [
+                "",               // #PLU
+                art.group,        // GROUP
+                art.dept,         // DEPT
+                art.desc,         // DESCRIPTION
+                "",               // LONG_DESCRIPTION
+                "",               // KP_PLU_NOTES
+                art.price1,       // PRICE_1 (en centimes)
+                art.price2,       // PRICE_2 (en centimes)
+                "", "", "", "",   // PRICE_3..6
+                "",               // BARCODE
+                "",               // PREFERED
+                ""                // ON_TDE
+            ];
+            csvRows.push(row.join(';'));
+        }
+
+        return {
+            csv: csvRows.join('\r\n') + '\r\n',
+            count: articles.length,
+            disabledCount: disabledCount
+        };
+    }
+
+
+    // --- SCRIPT 4 : REVERSE (JSON POPINA VERS CSV TABLEUR) ---
+    const dropZoneReverse = document.getElementById('dropZoneReverse');
+    const fileInputReverse = document.getElementById('fileInputReverse');
+    const reverseStatus = document.getElementById('reverseStatus');
+
+    dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
+    dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
+    dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
+    dropZoneReverse.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZoneReverse.classList.remove('dragover');
+        if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]);
+    });
+    fileInputReverse.addEventListener('change', (e) => {
+        if (e.target.files.length) handleFileReverse(e.target.files[0]);
+    });
+
+    function handleFileReverse(file) {
+        reverseStatus.className = 'status';
+        reverseStatus.textContent = "Extraction en cours...";
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const jsonObj = JSON.parse(e.target.result);
+                const csvData = processJsonToCsv(jsonObj);
+                if (csvData.count > 0) {
+                    downloadCsv(csvData.csv, "export_popina_extrait.csv");
+                    reverseStatus.className = 'status success';
+                    reverseStatus.textContent = `Extraction réussie ! ${csvData.count} article(s) extrait(s).`;
+                } else {
+                    reverseStatus.className = 'status error';
+                    reverseStatus.textContent = "Aucun article trouvé dans ce fichier JSON.";
+                }
+            } catch (err) {
+                console.error(err);
+                reverseStatus.className = 'status error';
+                reverseStatus.textContent = "Erreur de lecture du fichier JSON.";
+            }
+        };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function processJsonToCsv(jsonObj) {
+        let products = {};
+        let prices = {};
+        let taxes = {};
+        let productCategories = {};
+        let productGroups = {};
+
+        if (jsonObj.changes && Array.isArray(jsonObj.changes)) {
+            let buttonGroupsMap = {};
+
+            jsonObj.changes.forEach(item => {
+                if (item.type === "buttonGroup" && item.data) {
+                    buttonGroupsMap[item.data.id] = {
+                        name: item.data.name,
+                        buttons: item.data.buttons || [],
+                        isRoot: item.data.isRoot || false
+                    };
+                } else if (item.type === "product" && item.data) {
+                    products[item.data.id] = item.data.name;
+                } else if (item.type === "tax" && item.data) {
+                    taxes[item.data.id] = item.data.rate ? (item.data.rate / 100) : 20;
+                } else if (item.type === "price" && item.data) {
+                    prices[item.data.productId] = {
+                        amount: item.data.amount ? (item.data.amount / 100).toFixed(2) : "0.00",
+                        taxId: item.data.taxId
+                    };
+                }
+            });
+
+            Object.keys(buttonGroupsMap).forEach(bgId => {
+                const groupObj = buttonGroupsMap[bgId];
+                if (groupObj.buttons) {
+                    groupObj.buttons.forEach(btn => {
+                        if (btn.type === "product" && btn.objectId) {
+                            productCategories[btn.objectId] = groupObj.name;
+                        } else if (btn.type === "buttonGroup" && btn.objectId && buttonGroupsMap[btn.objectId]) {
+                            const subGroup = buttonGroupsMap[btn.objectId];
+                            if (subGroup.buttons) {
+                                subGroup.buttons.forEach(subBtn => {
+                                    if (subBtn.type === "product" && subBtn.objectId) {
+                                        productGroups[subBtn.objectId] = groupObj.name;
+                                        productCategories[subBtn.objectId] = subGroup.name;
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        } 
+        else if (jsonObj.items && Array.isArray(jsonObj.items)) {
+            let taxMap = {};
+            let macroMap = {};
+            let categoryMap = {};
+
+            if (jsonObj.taxes) {
+                jsonObj.taxes.forEach(t => {
+                    taxMap[t.client_id] = t.percentage ? (t.percentage / 100) : 20;
+                });
+            }
+
+            if (jsonObj.macro_categories) {
+                jsonObj.macro_categories.forEach(mc => {
+                    macroMap[mc.client_id] = mc.name;
+                });
+            }
+
+            if (jsonObj.cards && jsonObj.cards[0] && jsonObj.cards[0].categories) {
+                jsonObj.cards[0].categories.forEach(cat => {
+                    categoryMap[cat.client_id] = cat.name;
+                    if (cat.positions) {
+                        cat.positions.forEach(pos => {
+                            if (pos.item && pos.item.client_id) {
+                                productCategories[pos.item.client_id] = cat.name;
+                            }
+                        });
+                    }
+                });
+            }
+
+            jsonObj.items.forEach(item => {
+                const pName = item.name;
+                let pPrice = "0.00";
+                let pTva = "20";
+
+                if (item.prices && item.prices.length > 0) {
+                    pPrice = (item.prices[0].amount / 100).toFixed(2);
+                    if (item.prices[0].tax && item.prices[0].tax.client_id) {
+                        pTva = taxMap[item.prices[0].tax.client_id] || "20";
+                    }
+                }
+
+                products[item.client_id] = pName;
+                prices[item.client_id] = { amount: pPrice, taxId: null, tvaValue: pTva };
+
+                if (item.macro_category && item.macro_category.client_id) {
+                    productGroups[item.client_id] = macroMap[item.macro_category.client_id] || "DIVERS";
+                }
+            });
+        }
+
+        const csvRows = ["Groupe (Macro-catégorie);Sous-catégorie (Famille);Description (Nom article);Prix Sur place (Prix 1);TVA Sur place"];
+        let count = 0;
+
+        for (let pId in products) {
+            const name = products[pId];
+            if (!name || name === "5") continue;
+
+            const group = productGroups[pId] || "DIVERS";
+            const category = productCategories[pId] || group;
+            const priceObj = prices[pId] || { amount: "0.00", taxId: null };
+            const tva = priceObj.tvaValue || (priceObj.taxId ? (taxes[priceObj.taxId] || 20) : 20);
+
+            csvRows.push(`"${group.replace(/"/g, '""')}";"${category.replace(/"/g, '""')}";"${name.replace(/"/g, '""')}";${priceObj.amount};${tva}`);
+            count++;
+        }
+
+        return {
+            csv: csvRows.join('\r\n') + '\r\n',
+            count: count
+        };
+    }
+
+    function downloadCsv(content, filename, withBom = true) {
+        const parts = withBom ? ['\ufeff', content] : [content];
+        const blob = new Blob(parts, { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", filename);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+</script>
+
+</body>
+</html>
