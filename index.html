@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0044)https://cypjdc83.github.io/popina-converter/ -->
-<html lang="fr"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    
+<html lang="fr">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POS Converter - Tech Edition by cyp</title>
     <style>
@@ -430,7 +430,7 @@
             const cleStr = cle < 10 ? '0' + cle : '' + cle;
             tvaField.value = `FR${cleStr}${sirenStr}`;
         } else {
-            alert('Veuillez d\'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.');
+            alert("Veuillez d'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.");
         }
     }
 
@@ -1004,14 +1004,25 @@
         return num.toFixed(2);
     }
 
+    // CORRECTION TVA NOVA : 0 = 10% / 1 = 20% / 2 = 5.5%
     function getTvaValue(taxCode) {
-        const code = String(taxCode).trim();
-        switch (code) {
-            case "1": return 10.0;
-            case "2": return 20.0;
-            case "3": return 5.5;
-            case "4": return 0.0;
-            case "0": return 10.0;
+        if (taxCode === undefined || taxCode === null) return 20.0;
+        
+        let clean = String(taxCode).replace('%', '').replace(',', '.').trim();
+        if (clean === "") return 20.0;
+
+        let num = parseFloat(clean);
+        if (isNaN(num)) return 20.0;
+
+        if (num === 20 || num === 10 || num === 5.5) {
+            return num;
+        }
+
+        switch (String(Math.round(num))) {
+            case "0": return 10.0; // 0 -> 10%
+            case "1": return 20.0; // 1 -> 20%
+            case "2": return 5.5;  // 2 -> 5.5%
+            case "3": return 0.0;  // 3 -> 0%
             default: return 20.0;
         }
     }
@@ -1052,8 +1063,8 @@
                 depts[parts[0]] = parts[9];
             } else if (currentSection === "A" && parts.length > 28) {
                 const disabled = parts[9];
-                const tax1Code = parts[2];
-                const tax2Code = parts[3];
+                const tax1Code = parts[2]; // Code TVA Sur Place (TAX1)
+                const tax2Code = parts[3]; // Code TVA À Emporter (TAX2)
                 const name = parts[19];
                 const groupId = parts[20];
                 const price1 = parseFloat(parts[27].replace(',', '.')) || 0;
@@ -1066,7 +1077,7 @@
                 }
 
                 const tvaSurPlace = getTvaValue(tax1Code);
-                const tvaEmporter = getTvaValue(tax2Code);
+                const tvaEmporter = getTvaValue(tax2Code !== "" ? tax2Code : tax1Code);
 
                 rawArticles.push({
                     name: sanitizeName(name),
@@ -1483,4 +1494,5 @@
     }
 </script>
 
-</body></html>
+</body>
+</html>
