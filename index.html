@@ -183,6 +183,48 @@
             background: #0284c711;
         }
 
+        .btn {
+            background: var(--accent);
+            color: #0f172a;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            font-weight: bold;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+
+        .btn:hover { background: var(--accent-hover); color: white; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.8rem;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th { background-color: #0f172a; color: var(--accent); }
+
+        td[contenteditable="true"] {
+            background: #0f172a88;
+            outline: 1px dashed var(--accent);
+            cursor: text;
+        }
+
+        td[contenteditable="true"]:focus {
+            background: #0284c733;
+            outline: 2px solid var(--accent);
+        }
+
         .log-console {
             background: #000;
             color: #4ade80;
@@ -217,12 +259,13 @@
 
 <div class="container">
     <header>
-        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v4.1</span> <span class="author-tag">by cyp</span></h1>
-        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Direct Nova to JSON & Tools</div>
+        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v4.2</span> <span class="author-tag">by cyp</span></h1>
+        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Direct Nova & CSV to JSON & Tools</div>
     </header>
 
     <div class="tabs">
         <button class="tab-btn active" style="color:var(--accent); font-weight:bold;" onclick="switchTab('tab-nova-json')">🚀 Nova ➔ JSON Popina (Complet)</button>
+        <button class="tab-btn" onclick="switchTab('tab-json')">CSV Popina ➔ JSON BO</button>
         <button class="tab-btn" onclick="switchTab('tab-nova')">Nova ➔ CSV Popina</button>
         <button class="tab-btn" onclick="switchTab('tab-tde')">Nova ➔ SmartTDE</button>
         <button class="tab-btn" onclick="switchTab('tab-reverse')">JSON Popina ➔ CSV</button>
@@ -230,7 +273,6 @@
 
     <!-- TAB 1 (MAIN): NOVA TO POPINA JSON -->
     <div id="tab-nova-json" class="tab-content active">
-        
         <div class="card">
             <h3>⚙️ Informations de l'Établissement</h3>
             <span class="hint-tag">💡 Remplissez ces informations. Elles seront incluses dans le JSON d'export final.</span>
@@ -291,7 +333,87 @@
         </div>
     </div>
 
-    <!-- TAB 2: NOVA TO POPINA CSV -->
+    <!-- TAB 2: CSV POPINA TO JSON BO -->
+    <div id="tab-json" class="tab-content">
+        <div class="card">
+            <h3>⚙️ Informations de l'Établissement</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="ticket_name_csv">Nom du commerce</label>
+                    <input type="text" id="ticket_name_csv" placeholder="Ex: Mon Commerce">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_company_csv">SIRET / SIREN</label>
+                    <input type="text" id="ticket_company_csv" placeholder="Ex: 123 456 789 00012">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_tva_csv">N° TVA Intracommunautaire</label>
+                    <div class="input-btn-group">
+                        <input type="text" id="ticket_tva_csv" placeholder="Saisir ou générer">
+                        <button type="button" class="btn-secondary" onclick="calculerTVACsv()">Générer TVA</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="ticket_naf_csv">Code NAF / APE</label>
+                    <input type="text" id="ticket_naf_csv" placeholder="Ex: 1071C">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_address_csv">Adresse</label>
+                    <input type="text" id="ticket_address_csv" placeholder="Ex: 12 Rue de la République">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_zip_csv">Code Postal</label>
+                    <input type="text" id="ticket_zip_csv" placeholder="Ex: 75001">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_city_csv">Ville</label>
+                    <input type="text" id="ticket_city_csv" placeholder="Ex: Paris">
+                </div>
+                <div class="form-group">
+                    <label for="ticket_phone_csv">Téléphone</label>
+                    <input type="text" id="ticket_phone_csv" placeholder="Ex: 01 23 45 67 89">
+                </div>
+                <div class="form-group">
+                    <label for="gerant_code_csv">Code vendeur (Gérant)</label>
+                    <input type="text" id="gerant_code_csv" value="0000">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📂 Importer votre fichier CSV Popina</h3>
+            <div class="drop-zone" id="dropZoneJson">
+                <p>Glissez-déposez votre fichier <strong>.csv</strong> au format Popina ici ou cliquez pour choisir un fichier.</p>
+                <input type="file" id="fileInputJson" accept=".csv" style="display: none;">
+            </div>
+            <div id="logJson" class="log-console" style="display: block;"></div>
+        </div>
+
+        <div class="card" id="previewCard" style="display: none;">
+            <h3>📊 Aperçu &amp; Édition directe des données</h3>
+            <span class="hint-tag">💡 Astuce : Vous pouvez cliquer sur les cellules pour modifier directement les textes, prix ou TVA avant l'export.</span>
+            <div style="overflow-x: auto;">
+                <table id="previewTable">
+                    <thead>
+                        <tr>
+                            <th>Groupe</th>
+                            <th>Famille</th>
+                            <th>Nom Article (Éditable)</th>
+                            <th>Prix Sur Place (€)</th>
+                            <th>TVA Sur Place (%)</th>
+                            <th>Prix Emporter (€)</th>
+                            <th>TVA Emporter (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button class="btn" id="downloadBtn">📥 Télécharger le JSON Nouveau BO Popina</button>
+            <div class="status success" id="jsonStatus"></div>
+        </div>
+    </div>
+
+    <!-- TAB 3: NOVA TO POPINA CSV -->
     <div id="tab-nova" class="tab-content">
         <div class="card">
             <h3>📂 Conversion Caisse Nova ➔ CSV Popina (Pour Tableur)</h3>
@@ -307,7 +429,7 @@
         </div>
     </div>
 
-    <!-- TAB 3: NOVA TO SMARTTDE -->
+    <!-- TAB 4: NOVA TO SMARTTDE -->
     <div id="tab-tde" class="tab-content">
         <div class="card">
             <h3>📂 Conversion Caisse Nova ➔ SmartTDE CSV</h3>
@@ -323,7 +445,7 @@
         </div>
     </div>
 
-    <!-- TAB 4: REVERSE -->
+    <!-- TAB 5: REVERSE -->
     <div id="tab-reverse" class="tab-content">
         <div class="card">
             <h3>🔄 Extracteur : JSON Popina ➔ CSV Tableur</h3>
@@ -345,14 +467,16 @@
     function switchTab(tabId) {
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        const tabs = ['tab-nova-json', 'tab-nova', 'tab-tde', 'tab-reverse'];
+        const tabs = ['tab-nova-json', 'tab-json', 'tab-nova', 'tab-tde', 'tab-reverse'];
         const btnIndex = tabs.indexOf(tabId);
         if (btnIndex !== -1) document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
-        document.getElementById(tabId).classList.add('active');
+        const targetContent = document.getElementById(tabId);
+        if (targetContent) targetContent.classList.add('active');
     }
 
     function log(consoleId, msg) {
         const consoleEl = document.getElementById(consoleId);
+        if(!consoleEl) return;
         consoleEl.style.display = 'block';
         consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
         consoleEl.scrollTop = consoleEl.scrollHeight;
@@ -361,6 +485,22 @@
     function calculerTVA() {
         const companyField = document.getElementById('ticket_company');
         const tvaField = document.getElementById('ticket_tva');
+        if (!companyField) return;
+        const digits = companyField.value.replace(/\D/g, '');
+        if (digits.length >= 9) {
+            const sirenStr = digits.substring(0, 9);
+            const sirenNum = parseInt(sirenStr, 10);
+            const cle = (12 + 3 * (sirenNum % 97)) % 97;
+            const cleStr = cle < 10 ? '0' + cle : '' + cle;
+            tvaField.value = `FR${cleStr}${sirenStr}`;
+        } else {
+            alert("Veuillez d'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.");
+        }
+    }
+
+    function calculerTVACsv() {
+        const companyField = document.getElementById('ticket_company_csv');
+        const tvaField = document.getElementById('ticket_tva_csv');
         if (!companyField) return;
         const digits = companyField.value.replace(/\D/g, '');
         if (digits.length >= 9) {
@@ -384,6 +524,15 @@
         });
     }
 
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function sanitizeName(str) {
         if (!str) return "";
         let clean = String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, '').replace(/\u00A0/g, ' ').trim();
@@ -393,14 +542,13 @@
 
     function resolveTaxId(tvaInput) {
         const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
-        if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE"; // 20%
+        if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
         if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
-        if (Math.abs(num - 10) < 0.5) return "59f651fc-4f27-4a0a-98ba-e70d3e218e33"; // 10%
-        if (Math.abs(num - 5.5) < 0.5) return "e377eecb-78e8-4d2f-9020-9f790388584a"; // 5.5%
+        if (Math.abs(num - 10) < 0.5) return "59f651fc-4f27-4a0a-98ba-e70d3e218e33";
+        if (Math.abs(num - 5.5) < 0.5) return "e377eecb-78e8-4d2f-9020-9f790388584a";
         return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
     }
 
-    // VARIABLES DE STRICT COMPLIANCE POPINA JSON SCHEMA
     const targetPaymentMethods = [
         { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
         { "client_id": "F0CC63FF-2E20-40A4-B1B1-27C02177D63D", "name": "Mews", "mode": 11, "index": 9, "enabled": false, "change": false, "drawer": false, "should_print": false },
@@ -544,7 +692,7 @@
             "name": rowName,
             "client_id": itemId,
             "modular_price": false,
-            "preparation_step_index": -1, // <-- Fix : "null" correspond à "aucun" sur l'écran Popina (au lieu de 1 qui force "En suite 1")
+            "preparation_step_index": -1,
             "screen_name": null,
             "kitchen_name": null,
             "sku": null,
@@ -552,7 +700,7 @@
             "barcode": null,
             "is_weight_price": false,
             "kilo_price": 0.0,
-            "item_is_limodade": false, // <-- Typo obligatoire imposée par l'API Popina ('limodade' au lieu de 'limonade')
+            "item_is_limodade": false,
             "option_categories": [],
             "prices": itemPrices,
             "macro_category": { "client_id": macroId },
@@ -572,27 +720,31 @@
         };
     }
 
-    // --- MAIN TAB 1 : NOVA VERS JSON POPINA DIRECT (AVEC CONDIMENTS & SCHÉMA STRICT FIXÉ) ---
+    // TAB 1: NOVA TO POPINA JSON
     const dropZoneNovaJson = document.getElementById('dropZoneNovaJson');
     const fileInputNovaJson = document.getElementById('fileInputNovaJson');
     const novaJsonStatus = document.getElementById('novaJsonStatus');
 
-    dropZoneNovaJson.addEventListener('click', () => fileInputNovaJson.click());
-    dropZoneNovaJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNovaJson.classList.add('dragover'); });
-    dropZoneNovaJson.addEventListener('dragleave', () => dropZoneNovaJson.classList.remove('dragover'));
-    dropZoneNovaJson.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZoneNovaJson.classList.remove('dragover');
-        if (e.dataTransfer.files.length) handleFileNovaJson(e.dataTransfer.files[0]);
-    });
-    fileInputNovaJson.addEventListener('change', (e) => {
-        if (e.target.files.length) handleFileNovaJson(e.target.files[0]);
-    });
+    if(dropZoneNovaJson && fileInputNovaJson) {
+        dropZoneNovaJson.addEventListener('click', () => fileInputNovaJson.click());
+        dropZoneNovaJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNovaJson.classList.add('dragover'); });
+        dropZoneNovaJson.addEventListener('dragleave', () => dropZoneNovaJson.classList.remove('dragover'));
+        dropZoneNovaJson.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneNovaJson.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFileNovaJson(e.dataTransfer.files[0]);
+        });
+        fileInputNovaJson.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFileNovaJson(e.target.files[0]);
+        });
+    }
 
     function handleFileNovaJson(file) {
+        if(!novaJsonStatus) return;
         novaJsonStatus.className = 'status';
         novaJsonStatus.textContent = "Lecture et conversion en cours...";
-        document.getElementById('logNovaJson').innerHTML = '';
+        const logConsole = document.getElementById('logNovaJson');
+        if(logConsole) logConsole.innerHTML = '';
 
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -850,17 +1002,320 @@
         novaJsonStatus.textContent = `Succès ! ${articles.length} articles et ${finalSharedOptions.length} listes de condiments exportées avec succès.`;
     }
 
-    // --- TAB 2 : CAISSE NOVA VERS CSV POPINA ---
+    // TAB 2: CSV POPINA TO JSON BO
+    const dropZoneJson = document.getElementById('dropZoneJson');
+    const fileInputJson = document.getElementById('fileInputJson');
+    const previewCard = document.getElementById('previewCard');
+    const previewTableBody = document.querySelector('#previewTable tbody');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    let parsedRowsData = [];
+
+    if(dropZoneJson && fileInputJson) {
+        dropZoneJson.addEventListener('click', () => fileInputJson.click());
+        dropZoneJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneJson.classList.add('dragover'); });
+        dropZoneJson.addEventListener('dragleave', () => dropZoneJson.classList.remove('dragover'));
+        dropZoneJson.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZoneJson.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFileJson(e.dataTransfer.files[0]);
+        });
+        fileInputJson.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFileJson(e.target.files[0]);
+        });
+    }
+
+    function handleFileJson(file) {
+        log('logJson', `Chargement de ${file.name}...`);
+        const reader = new FileReader();
+        reader.onload = function(e) { parseCSVJson(e.target.result); };
+        reader.readAsText(file, 'UTF-8');
+    }
+
+    function parseCSVLine(line, delimiter) {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === delimiter && !inQuotes) {
+                result.push(cur.trim());
+                cur = '';
+            } else {
+                cur += char;
+            }
+        }
+        result.push(cur.trim());
+        return result;
+    }
+
+    function parseCSVJson(text) {
+        const lines = text.split(/\r?\n/);
+        if (lines.length < 2) { alert('Le fichier CSV est vide.'); return; }
+
+        const delimiter = text.includes(';') ? ';' : ',';
+        const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase());
+
+        let idxGroupe = headers.findIndex(h => h.includes('groupe') || h.includes('macro'));
+        let idxCat = headers.findIndex((h, idx) => idx !== idxGroupe && (h.includes('famille') || h.includes('categorie') || h.includes('sous-cat')));
+        let idxNom = headers.findIndex(h => h.includes('description') || h.includes('nom') || h.includes('article'));
+        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h === 'prix');
+        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h === 'tva');
+        let idxPrix2 = headers.findIndex(h => h.includes('prix emporter') || h.includes('prix 2'));
+        let idxTva2 = headers.findIndex(h => h.includes('tva emporter') || h.includes('tva 2'));
+
+        if (idxGroupe === -1) {
+            if (headers.length >= 2 && (headers[0].includes('cat') || headers[0].includes('famille')) && (headers[1].includes('cat') || headers[1].includes('famille'))) {
+                idxGroupe = 0; idxCat = 1;
+            } else {
+                idxGroupe = -1; if (idxCat === -1) idxCat = 0;
+            }
+        }
+
+        if (idxNom === -1) idxNom = 2;
+        if (idxPrix === -1) idxPrix = 3;
+        if (idxTva === -1) idxTva = 4;
+        if (idxPrix2 === -1 && headers.length > 5) idxPrix2 = 5;
+        if (idxTva2 === -1 && headers.length > 6) idxTva2 = 6;
+
+        if(previewTableBody) previewTableBody.innerHTML = '';
+        parsedRowsData = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            if (!lines[i].trim()) continue;
+            const cols = parseCSVLine(lines[i], delimiter);
+
+            const groupeName = idxGroupe >= 0 ? sanitizeName(cols[idxGroupe] || 'Groupe 1') : 'Groupe 1';
+            const categoryName = sanitizeName(cols[idxCat] || 'Général');
+            const name = sanitizeName(cols[idxNom] || '');
+            const rawPrix = (cols[idxPrix] || '0').replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
+            const rawPrix2 = idxPrix2 >= 0 && cols[idxPrix2] ? cols[idxPrix2].replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
+            const rawTva2 = idxTva2 >= 0 && cols[idxTva2] ? cols[idxTva2].replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
+
+            if (name) {
+                const itemObj = {
+                    groupe: groupeName,
+                    category: categoryName,
+                    name: name,
+                    price: parseFloat(rawPrix) || 0,
+                    tva: rawTva || "20",
+                    price2: rawPrix2 !== '' ? (parseFloat(rawPrix2) || 0) : null,
+                    tva2: rawTva2 !== '' ? rawTva2 : (rawPrix2 !== '' ? (rawTva || "20") : null)
+                };
+                parsedRowsData.push(itemObj);
+
+                if(previewTableBody) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(itemObj.groupe)}</td>
+                        <td>${escapeHtml(itemObj.category)}</td>
+                        <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${escapeHtml(itemObj.name)}</strong></td>
+                        <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.price.toFixed(2))}</td>
+                        <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.tva)}</td>
+                        <td contenteditable="true" data-field="price2" data-index="${parsedRowsData.length - 1}">${itemObj.price2 !== null ? escapeHtml(itemObj.price2.toFixed(2)) : ''}</td>
+                        <td contenteditable="true" data-field="tva2" data-index="${parsedRowsData.length - 1}">${itemObj.tva2 !== null ? escapeHtml(itemObj.tva2) : ''}</td>
+                    `;
+                    previewTableBody.appendChild(tr);
+                }
+            }
+        }
+
+        if(previewTableBody) {
+            previewTableBody.querySelectorAll('td[contenteditable="true"]').forEach(td => {
+                td.addEventListener('blur', (e) => {
+                    const idx = parseInt(e.target.getAttribute('data-index'), 10);
+                    const field = e.target.getAttribute('data-field');
+                    let val = e.target.innerText.trim();
+                    let invalid = false;
+
+                    if (field === 'name') {
+                        if (!val) { invalid = true; val = parsedRowsData[idx].name; e.target.innerText = val; }
+                    } else if (field === 'price' || field === 'price2') {
+                        if (val === '' && field === 'price2') {
+                            val = null;
+                            e.target.innerText = '';
+                        } else {
+                            const parsed = parseFloat(val.replace(',', '.'));
+                            if (isNaN(parsed) || parsed < 0) { invalid = true; }
+                            val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
+                            e.target.innerText = val.toFixed(2);
+                        }
+                    } else if (field === 'tva' || field === 'tva2') {
+                        if (val === '' && field === 'tva2') {
+                            val = null;
+                            e.target.innerText = '';
+                        } else {
+                            const parsed = parseFloat(val.replace(',', '.'));
+                            if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
+                        }
+                    }
+
+                    e.target.style.outlineColor = invalid ? 'var(--danger)' : '';
+                    e.target.style.background = invalid ? '#ef444422' : '';
+
+                    parsedRowsData[idx][field] = val;
+                    if (invalid) {
+                        log('logJson', `⚠ Valeur invalide pour "${parsedRowsData[idx].name}" (${field}), vérifiez avant export.`);
+                    } else {
+                        log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
+                    }
+                });
+            });
+        }
+
+        if(previewCard) previewCard.style.display = 'block';
+        log('logJson', `Parsing réussi : ${parsedRowsData.length} articles extraits.`);
+    }
+
+    if(downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            const jsonStatus = document.getElementById('jsonStatus');
+            if (!parsedRowsData.length) {
+                if(jsonStatus) {
+                    jsonStatus.className = 'status error';
+                    jsonStatus.textContent = "Aucune donnée à exporter. Importez d'abord un fichier CSV.";
+                }
+                return;
+            }
+
+            const storeName = sanitizeName(document.getElementById('ticket_name_csv').value) || "MON COMMERCE";
+            const companySiret = sanitizeName(document.getElementById('ticket_company_csv').value);
+            const numTva = sanitizeName(document.getElementById('ticket_tva_csv').value);
+            const codeNaf = sanitizeName(document.getElementById('ticket_naf_csv').value);
+            const address = sanitizeName(document.getElementById('ticket_address_csv').value);
+            const zip = sanitizeName(document.getElementById('ticket_zip_csv').value);
+            const city = sanitizeName(document.getElementById('ticket_city_csv').value);
+            const phone = sanitizeName(document.getElementById('ticket_phone_csv').value);
+            const gerantCode = sanitizeName(document.getElementById('gerant_code_csv').value) || "0000";
+            const nowISO = new Date().toISOString();
+
+            const macroCategoriesMap = new Map();
+            const categoriesMap = new Map();
+            const macroCatFamilyCounter = new Map();
+            const finalItems = [];
+
+            parsedRowsData.forEach(row => {
+                if (!macroCategoriesMap.has(row.groupe)) {
+                    macroCategoriesMap.set(row.groupe, { id: generateUUID(), index: macroCategoriesMap.size });
+                }
+                const macroObj = macroCategoriesMap.get(row.groupe);
+
+                if (!macroCatFamilyCounter.has(macroObj.id)) {
+                    macroCatFamilyCounter.set(macroObj.id, 0);
+                }
+
+                const catKey = `${row.groupe}__${row.category}`;
+                if (!categoriesMap.has(catKey)) {
+                    const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
+                    macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
+
+                    categoriesMap.set(catKey, {
+                        id: generateUUID(),
+                        name: row.category,
+                        macroId: macroObj.id,
+                        indexInGroup: familyIndexInGroup,
+                        positions: []
+                    });
+                }
+                const catObj = categoriesMap.get(catKey);
+
+                const itemId = generateUUID();
+                const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
+                const taxId = resolveTaxId(row.tva);
+
+                const itemPrices = [{
+                    "client_id": generateUUID(),
+                    "name": null,
+                    "amount": priceInCents,
+                    "price_type": 0,
+                    "tax": { "client_id": taxId }
+                }];
+
+                if (row.price2 !== null && row.price2 !== undefined && !isNaN(row.price2)) {
+                    const price2InCents = Math.round((parseFloat(row.price2) || 0) * 100);
+                    const taxId2 = resolveTaxId(row.tva2 !== null ? row.tva2 : row.tva);
+                    itemPrices.push({
+                        "client_id": generateUUID(),
+                        "name": null,
+                        "amount": price2InCents,
+                        "price_type": 3,
+                        "tax": { "client_id": taxId2 }
+                    });
+                }
+
+                finalItems.push(createStrictItem(row.name, itemId, nowISO, itemPrices, macroObj.id, []));
+
+                catObj.positions.push({
+                    "client_id": generateUUID(),
+                    "highlight_level": 0,
+                    "brightness_level": 0,
+                    "alternate_color": -1,
+                    "index": catObj.positions.length,
+                    "item": { "client_id": itemId }
+                });
+            });
+
+            const parsedMacroCategories = [];
+            macroCategoriesMap.forEach((val, gName) => {
+                parsedMacroCategories.push(createStrictMacroCategory(val.id, gName, val.index));
+            });
+
+            const parsedCardCategories = [];
+            categoriesMap.forEach((val) => {
+                parsedCardCategories.push({
+                    "client_id": val.id,
+                    "name": val.name,
+                    "index": val.indexInGroup,
+                    "number_of_columns": 2,
+                    "number_of_lines": 8,
+                    "positions": val.positions,
+                    "macro_category": { "client_id": val.macroId }
+                });
+            });
+
+            const finalJsonData = getStrictPopinaBaseData(storeName, companySiret, numTva, codeNaf, address, zip, city, phone, gerantCode, nowISO);
+            finalJsonData.macro_categories = parsedMacroCategories;
+            finalJsonData.items = finalItems;
+            finalJsonData.cards = [{ "client_id": generateUUID(), "name": "Carte Principale", "categories": parsedCardCategories, "selections": [], "menus": [] }];
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "programmation") + "_popina.json";
+            downloadAnchor.setAttribute("download", fileName);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+
+            if(jsonStatus) {
+                jsonStatus.className = 'status success';
+                jsonStatus.textContent = `Export réussi ! ${finalItems.length} article(s), ${parsedMacroCategories.length} groupe(s) exporté(s).`;
+            }
+        });
+    }
+
+    // TAB 3: NOVA TO POPINA CSV
     const dropZoneNova = document.getElementById('dropZoneNova');
     const fileInputNova = document.getElementById('fileInputNova');
     const novaStatus = document.getElementById('novaStatus');
-    dropZoneNova.addEventListener('click', () => fileInputNova.click());
-    dropZoneNova.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNova.classList.add('dragover'); });
-    dropZoneNova.addEventListener('dragleave', () => dropZoneNova.classList.remove('dragover'));
-    dropZoneNova.addEventListener('drop', (e) => { e.preventDefault(); dropZoneNova.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileNova(e.dataTransfer.files[0]); });
-    fileInputNova.addEventListener('change', (e) => { if (e.target.files.length) handleFileNova(e.target.files[0]); });
+    if(dropZoneNova && fileInputNova) {
+        dropZoneNova.addEventListener('click', () => fileInputNova.click());
+        dropZoneNova.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNova.classList.add('dragover'); });
+        dropZoneNova.addEventListener('dragleave', () => dropZoneNova.classList.remove('dragover'));
+        dropZoneNova.addEventListener('drop', (e) => { e.preventDefault(); dropZoneNova.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileNova(e.dataTransfer.files[0]); });
+        fileInputNova.addEventListener('change', (e) => { if (e.target.files.length) handleFileNova(e.target.files[0]); });
+    }
 
     function handleFileNova(file) {
+        if(!novaStatus) return;
         novaStatus.className = 'status'; novaStatus.textContent = "Traitement en cours...";
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -902,17 +1357,20 @@
         return { csv: csvRows.join('\r\n'), count: totalCount };
     }
 
-    // --- TAB 3 : CAISSE NOVA VERS CSV SMART-TDE ---
+    // TAB 4: NOVA TO SMARTTDE
     const dropZoneTde = document.getElementById('dropZoneTde');
     const fileInputTde = document.getElementById('fileInputTde');
     const tdeStatus = document.getElementById('tdeStatus');
-    dropZoneTde.addEventListener('click', () => fileInputTde.click());
-    dropZoneTde.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneTde.classList.add('dragover'); });
-    dropZoneTde.addEventListener('dragleave', () => dropZoneTde.classList.remove('dragover'));
-    dropZoneTde.addEventListener('drop', (e) => { e.preventDefault(); dropZoneTde.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileTde(e.dataTransfer.files[0]); });
-    fileInputTde.addEventListener('change', (e) => { if (e.target.files.length) handleFileTde(e.target.files[0]); });
+    if(dropZoneTde && fileInputTde) {
+        dropZoneTde.addEventListener('click', () => fileInputTde.click());
+        dropZoneTde.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneTde.classList.add('dragover'); });
+        dropZoneTde.addEventListener('dragleave', () => dropZoneTde.classList.remove('dragover'));
+        dropZoneTde.addEventListener('drop', (e) => { e.preventDefault(); dropZoneTde.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileTde(e.dataTransfer.files[0]); });
+        fileInputTde.addEventListener('change', (e) => { if (e.target.files.length) handleFileTde(e.target.files[0]); });
+    }
 
     function handleFileTde(file) {
+        if(!tdeStatus) return;
         tdeStatus.className = 'status'; tdeStatus.textContent = "Traitement en cours...";
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -938,17 +1396,20 @@
         return { csv: csvRows.join('\r\n') + '\r\n', count: articles.length };
     }
 
-    // --- TAB 4 : REVERSE (JSON POPINA VERS CSV TABLEUR) ---
+    // TAB 5: REVERSE
     const dropZoneReverse = document.getElementById('dropZoneReverse');
     const fileInputReverse = document.getElementById('fileInputReverse');
     const reverseStatus = document.getElementById('reverseStatus');
-    dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
-    dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
-    dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
-    dropZoneReverse.addEventListener('drop', (e) => { e.preventDefault(); dropZoneReverse.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]); });
-    fileInputReverse.addEventListener('change', (e) => { if (e.target.files.length) handleFileReverse(e.target.files[0]); });
+    if(dropZoneReverse && fileInputReverse) {
+        dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
+        dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
+        dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
+        dropZoneReverse.addEventListener('drop', (e) => { e.preventDefault(); dropZoneReverse.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]); });
+        fileInputReverse.addEventListener('change', (e) => { if (e.target.files.length) handleFileReverse(e.target.files[0]); });
+    }
 
     function handleFileReverse(file) {
+        if(!reverseStatus) return;
         reverseStatus.className = 'status'; reverseStatus.textContent = "Extraction en cours...";
         const reader = new FileReader();
         reader.onload = function(e) {
