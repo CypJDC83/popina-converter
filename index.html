@@ -1,1454 +1,604 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Converter - Tech Edition by cyp</title>
-    <style>
-        :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #38bdf8;
-            --accent-hover: #0284c7;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
-        }
-
-        body {
-            font-family: 'JetBrains Mono', Consolas, -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            margin: 0;
-            padding: 1.5rem;
-            line-height: 1.5;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        h1 {
-            font-size: 1.3rem;
-            margin: 0;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .tech-badge {
-            background-color: #0369a1;
-            color: #e0f2fe;
-            font-size: 0.7rem;
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .author-tag {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            font-weight: normal;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            padding: 0.6rem 1rem;
-            font-size: 0.85rem;
-            font-family: inherit;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            color: var(--text-main);
-            border-color: var(--accent);
-            background: #0284c722;
-        }
-
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            padding: 1.25rem;
-            border: 1px solid var(--border);
-            margin-bottom: 1.25rem;
-        }
-
-        .card h3 {
-            margin-top: 0;
-            font-size: 1rem;
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 0.8rem;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .form-group label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 0.3rem;
-        }
-
-        .form-group input {
-            background: #0f172a;
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 0.4rem 0.6rem;
-            border-radius: 4px;
-            font-family: inherit;
-            font-size: 0.85rem;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        .input-btn-group {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .input-btn-group input {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .btn-secondary {
-            background-color: #475569;
-            color: white;
-            border: none;
-            padding: 0.45rem 0.85rem;
-            font-size: 0.75rem;
-            font-family: inherit;
-            font-weight: 600;
-            border-radius: 4px;
-            cursor: pointer;
-            white-space: nowrap;
-            flex-shrink: 0;
-            min-width: fit-content;
-            transition: background-color 0.2s ease;
-        }
-
-        .btn-secondary:hover { background-color: #334155; }
-
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 8px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            background: #0f172a55;
-            transition: all 0.2s;
-        }
-
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--accent);
-            background: #0284c711;
-        }
-
-        .btn {
-            background: var(--accent);
-            color: #0f172a;
-            border: none;
-            padding: 0.6rem 1.2rem;
-            font-weight: bold;
-            font-family: inherit;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 1rem;
-            transition: background 0.2s;
-        }
-
-        .btn:hover { background: var(--accent-hover); color: white; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.8rem;
-        }
-
-        th, td {
-            text-align: left;
-            padding: 0.5rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th { background-color: #0f172a; color: var(--accent); }
-
-        td[contenteditable="true"] {
-            background: #0f172a88;
-            outline: 1px dashed var(--accent);
-            cursor: text;
-        }
-
-        td[contenteditable="true"]:focus {
-            background: #0284c733;
-            outline: 2px solid var(--accent);
-        }
-
-        .log-console {
-            background: #000;
-            color: #4ade80;
-            font-family: monospace;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            max-height: 120px;
-            overflow-y: auto;
-            margin-top: 1rem;
-            border: 1px solid #1e293b;
-        }
-
-        .status {
-            margin-top: 15px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: center;
-        }
-        .status.success { color: #22c55e; }
-        .status.error { color: #ef4444; }
-
-        .hint-tag {
-            font-size: 0.75rem;
-            color: var(--warning);
-            margin-top: 0.5rem;
-            display: block;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POS Converter v5 – Field Tech by cyp</title>
+<style>
+:root{
+  --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
+  --accent:#38bdf8;--accent2:#0ea5e9;--text:#f1f5f9;--muted:#94a3b8;
+  --ok:#22c55e;--warn:#eab308;--err:#ef4444;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 'JetBrains Mono',Consolas,ui-monospace,monospace;padding:1.25rem}
+.wrap{max-width:1180px;margin:0 auto}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;border-bottom:2px solid var(--line);padding-bottom:.9rem;margin-bottom:1.2rem}
+h1{margin:0;font-size:1.25rem;color:var(--accent)}
+.badge{background:#0369a1;color:#e0f2fe;font-size:.65rem;padding:.15rem .45rem;border-radius:4px;margin-left:.4rem}
+.sub{color:var(--muted);font-size:.75rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1.1rem;margin-bottom:1.1rem}
+.card>h3{margin:0 0 .8rem;font-size:.95rem;color:var(--accent);display:flex;align-items:center;gap:.5rem}
+.step{background:var(--accent);color:#06121f;border-radius:50%;width:22px;height:22px;display:inline-grid;place-items:center;font-size:.75rem;font-weight:700}
+details.card>summary{cursor:pointer;list-style:none;font-weight:700;color:var(--accent);font-size:.95rem}
+details.card>summary::-webkit-details-marker{display:none}
+details.card[open]>summary{margin-bottom:.8rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.7rem}
+.fg label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:.25rem}
+input,select{background:#0b1220;border:1px solid var(--line);color:var(--text);border-radius:5px;padding:.4rem .55rem;font:inherit;font-size:.82rem;width:100%}
+input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
+.row{display:flex;gap:.4rem;align-items:center}
+.row input{flex:1;min-width:0}
+button{font:inherit;cursor:pointer;border:none;border-radius:5px;padding:.45rem .8rem;font-size:.78rem;font-weight:700;transition:.15s}
+.b-primary{background:var(--accent);color:#06121f}.b-primary:hover{background:var(--accent2);color:#fff}
+.b-sec{background:#334155;color:#fff}.b-sec:hover{background:#475569}
+.b-danger{background:#7f1d1d;color:#fecaca}.b-danger:hover{background:var(--err);color:#fff}
+button:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-size:.72rem;color:var(--warn);margin-top:.4rem}
+.tag{font-size:.68rem;padding:.1rem .4rem;border-radius:4px;margin-left:.4rem}
+.tag.ok{background:#14532d;color:#bbf7d0}.tag.bad{background:#7f1d1d;color:#fecaca}
+.drop{border:2px dashed var(--line);border-radius:10px;padding:1.8rem;text-align:center;cursor:pointer;background:#0b122055;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:#0ea5e911}
+.drop small{color:var(--muted);display:block;margin-top:.3rem}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:.35rem .7rem;font-size:.75rem}
+.chip b{color:var(--accent);font-size:.95rem;margin-right:.3rem}
+.chip.w b{color:var(--warn)}.chip.e b{color:var(--err)}
+.toolbar{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.7rem}
+.toolbar input[type=search]{max-width:260px}
+.toolbar select{width:auto}
+.tabs{display:flex;gap:.4rem;margin-bottom:.8rem;flex-wrap:wrap}
+.tab{background:var(--panel2);color:var(--muted);border:1px solid var(--line)}
+.tab.on{color:var(--text);border-color:var(--accent);background:#0ea5e922}
+.pane{display:none}.pane.on{display:block}
+.scroll{max-height:520px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+th{position:sticky;top:0;background:#0b1220;color:var(--accent);text-align:left;padding:.45rem;z-index:1;white-space:nowrap}
+td{padding:.2rem .3rem;border-top:1px solid var(--line)}
+td input{padding:.3rem .4rem;font-size:.78rem;border-color:transparent;background:transparent}
+td input:hover{border-color:var(--line)}
+td input:focus{background:#0b1220}
+td input.bad{border-color:var(--err);background:#ef444422}
+td input.warn{border-color:var(--warn);background:#eab30818}
+td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
+.exports{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.7rem}
+.exp{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:.8rem}
+.exp h4{margin:0 0 .3rem;font-size:.82rem}
+.exp p{margin:0 0 .6rem;font-size:.7rem;color:var(--muted)}
+.exp button{width:100%}
+.log{background:#000;color:#4ade80;border:1px solid var(--line);border-radius:6px;padding:.6rem;font-size:.72rem;max-height:130px;overflow:auto;margin-top:.8rem}
+.log .w{color:var(--warn)}.log .e{color:var(--err)}
+#toast{position:fixed;right:1rem;bottom:1rem;display:flex;flex-direction:column;gap:.4rem;z-index:50}
+.t-item{background:var(--panel2);border-left:4px solid var(--accent);padding:.55rem .8rem;border-radius:6px;font-size:.78rem;box-shadow:0 4px 18px #0008;animation:in .2s}
+.t-item.ok{border-color:var(--ok)}.t-item.err{border-color:var(--err)}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+.empty{text-align:center;color:var(--muted);padding:1.5rem;font-size:.8rem}
+@media(max-width:640px){body{padding:.6rem}}
+</style>
 </head>
 <body>
+<div class="wrap">
 
-<div class="container">
-    <header>
-        <h1>⚡ POS Converter <span class="tech-badge">FIELD TECH v4.2</span> <span class="author-tag">by cyp</span></h1>
-        <div style="font-size:0.75rem; color:var(--text-muted);">Client-Side Engine • Direct Nova & CSV to JSON & Tools</div>
-    </header>
+<header>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5</span> <span class="sub">by cyp</span></h1>
+  <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
+</header>
 
-    <div class="tabs">
-        <button class="tab-btn active" style="color:var(--accent); font-weight:bold;" onclick="switchTab('tab-nova-json')">🚀 Nova ➔ JSON Popina (Complet)</button>
-        <button class="tab-btn" onclick="switchTab('tab-json')">CSV Popina ➔ JSON BO</button>
-        <button class="tab-btn" onclick="switchTab('tab-nova')">Nova ➔ CSV Popina</button>
-        <button class="tab-btn" onclick="switchTab('tab-tde')">Nova ➔ SmartTDE</button>
-        <button class="tab-btn" onclick="switchTab('tab-reverse')">JSON Popina ➔ CSV</button>
-    </div>
+<!-- 1. Établissement -->
+<details class="card" id="etab" open>
+  <summary>⚙️ 1 · Informations de l'établissement <span class="sub">(sauvegardées automatiquement dans ce navigateur)</span></summary>
+  <div class="grid">
+    <div class="fg"><label>Nom du commerce</label><input id="f_name" placeholder="Mon Commerce"></div>
+    <div class="fg"><label>SIRET / SIREN <span id="siretTag"></span></label><input id="f_siret" placeholder="123 456 789 00012" inputmode="numeric"></div>
+    <div class="fg"><label>N° TVA intracommunautaire</label>
+      <div class="row"><input id="f_tva" placeholder="Saisir ou générer"><button type="button" class="b-sec" id="btnTva">Générer</button></div></div>
+    <div class="fg"><label>Code NAF / APE</label><input id="f_naf" placeholder="1071C"></div>
+    <div class="fg"><label>Adresse</label><input id="f_address" placeholder="12 Rue de la République"></div>
+    <div class="fg"><label>Code postal</label><input id="f_zip" placeholder="75001" inputmode="numeric"></div>
+    <div class="fg"><label>Ville</label><input id="f_city" placeholder="Paris"></div>
+    <div class="fg"><label>Téléphone</label><input id="f_phone" placeholder="01 23 45 67 89"></div>
+    <div class="fg"><label>Code vendeur (Gérant)</label><input id="f_gerant" value="0000"></div>
+  </div>
+  <div class="toolbar" style="margin-top:.8rem"><button class="b-sec" id="btnResetEtab">Effacer ces infos</button></div>
+</details>
 
-    <!-- TAB 1 (MAIN): NOVA TO POPINA JSON -->
-    <div id="tab-nova-json" class="tab-content active">
-        <div class="card">
-            <h3>⚙️ Informations de l'Établissement</h3>
-            <span class="hint-tag">💡 Remplissez ces informations. Elles seront incluses dans le JSON d'export final.</span>
-            <div class="form-grid" style="margin-top: 10px;">
-                <div class="form-group">
-                    <label for="ticket_name">Nom du commerce</label>
-                    <input type="text" id="ticket_name" placeholder="Ex: Mon Commerce">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_company">SIRET / SIREN</label>
-                    <input type="text" id="ticket_company" placeholder="Ex: 123 456 789 00012">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_tva">N° TVA Intracommunautaire</label>
-                    <div class="input-btn-group">
-                        <input type="text" id="ticket_tva" placeholder="Saisir ou générer">
-                        <button type="button" class="btn-secondary" onclick="calculerTVA()">Générer TVA</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="ticket_naf">Code NAF / APE</label>
-                    <input type="text" id="ticket_naf" placeholder="Ex: 1071C">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_address">Adresse</label>
-                    <input type="text" id="ticket_address" placeholder="Ex: 12 Rue de la République">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_zip">Code Postal</label>
-                    <input type="text" id="ticket_zip" placeholder="Ex: 75001">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_city">Ville</label>
-                    <input type="text" id="ticket_city" placeholder="Ex: Paris">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_phone">Téléphone</label>
-                    <input type="text" id="ticket_phone" placeholder="Ex: 01 23 45 67 89">
-                </div>
-                <div class="form-group">
-                    <label for="gerant_code">Code vendeur (Gérant)</label>
-                    <input type="text" id="gerant_code" value="0000">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📂 Importer la Caisse Nova (.csv)</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top:0;">
-                Glissez votre export <strong>prog_nova.csv</strong> ci-dessous. Le script extrait automatiquement les articles, groupes, familles, et <strong>listes de condiments</strong> pour générer un fichier JSON parfaitement configuré pour le nouveau Back-Office Popina.
-            </p>
-            <div class="drop-zone" id="dropZoneNovaJson">
-                <p>Glissez votre fichier <strong>prog_nova.csv</strong> ici</p>
-                <input type="file" id="fileInputNovaJson" accept=".csv" style="display: none;">
-            </div>
-            <div class="status" id="novaJsonStatus"></div>
-            <div id="logNovaJson" class="log-console" style="display:none;"></div>
-        </div>
-    </div>
-
-    <!-- TAB 2: CSV POPINA TO JSON BO -->
-    <div id="tab-json" class="tab-content">
-        <div class="card">
-            <h3>⚙️ Informations de l'Établissement</h3>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="ticket_name_csv">Nom du commerce</label>
-                    <input type="text" id="ticket_name_csv" placeholder="Ex: Mon Commerce">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_company_csv">SIRET / SIREN</label>
-                    <input type="text" id="ticket_company_csv" placeholder="Ex: 123 456 789 00012">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_tva_csv">N° TVA Intracommunautaire</label>
-                    <div class="input-btn-group">
-                        <input type="text" id="ticket_tva_csv" placeholder="Saisir ou générer">
-                        <button type="button" class="btn-secondary" onclick="calculerTVACsv()">Générer TVA</button>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="ticket_naf_csv">Code NAF / APE</label>
-                    <input type="text" id="ticket_naf_csv" placeholder="Ex: 1071C">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_address_csv">Adresse</label>
-                    <input type="text" id="ticket_address_csv" placeholder="Ex: 12 Rue de la République">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_zip_csv">Code Postal</label>
-                    <input type="text" id="ticket_zip_csv" placeholder="Ex: 75001">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_city_csv">Ville</label>
-                    <input type="text" id="ticket_city_csv" placeholder="Ex: Paris">
-                </div>
-                <div class="form-group">
-                    <label for="ticket_phone_csv">Téléphone</label>
-                    <input type="text" id="ticket_phone_csv" placeholder="Ex: 01 23 45 67 89">
-                </div>
-                <div class="form-group">
-                    <label for="gerant_code_csv">Code vendeur (Gérant)</label>
-                    <input type="text" id="gerant_code_csv" value="0000">
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>📂 Importer votre fichier CSV Popina</h3>
-            <div class="drop-zone" id="dropZoneJson">
-                <p>Glissez-déposez votre fichier <strong>.csv</strong> au format Popina ici ou cliquez pour choisir un fichier.</p>
-                <input type="file" id="fileInputJson" accept=".csv" style="display: none;">
-            </div>
-            <div id="logJson" class="log-console" style="display: block;"></div>
-        </div>
-
-        <div class="card" id="previewCard" style="display: none;">
-            <h3>📊 Aperçu &amp; Édition directe des données</h3>
-            <span class="hint-tag">💡 Astuce : Vous pouvez cliquer sur les cellules pour modifier directement les textes, prix ou TVA avant l'export.</span>
-            <div style="overflow-x: auto;">
-                <table id="previewTable">
-                    <thead>
-                        <tr>
-                            <th>Groupe</th>
-                            <th>Famille</th>
-                            <th>Nom Article (Éditable)</th>
-                            <th>Prix Sur Place (€)</th>
-                            <th>TVA Sur Place (%)</th>
-                            <th>Prix Emporter (€)</th>
-                            <th>TVA Emporter (%)</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <button class="btn" id="downloadBtn">📥 Télécharger le JSON Nouveau BO Popina</button>
-            <div class="status success" id="jsonStatus"></div>
-        </div>
-    </div>
-
-    <!-- TAB 3: NOVA TO POPINA CSV -->
-    <div id="tab-nova" class="tab-content">
-        <div class="card">
-            <h3>📂 Conversion Caisse Nova ➔ CSV Popina (Pour Tableur)</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-                Utilisez cet outil uniquement si vous souhaitez extraire la carte Nova dans un fichier CSV classique pour la retravailler sous Excel.
-            </p>
-            <div class="drop-zone" id="dropZoneNova">
-                <p>Glissez votre fichier <strong>prog_nova.csv</strong> ici</p>
-                <input type="file" id="fileInputNova" accept=".csv" style="display: none;">
-            </div>
-            <div class="status" id="novaStatus"></div>
-            <div id="logNova" class="log-console" style="display:none;"></div>
-        </div>
-    </div>
-
-    <!-- TAB 4: NOVA TO SMARTTDE -->
-    <div id="tab-tde" class="tab-content">
-        <div class="card">
-            <h3>📂 Conversion Caisse Nova ➔ SmartTDE CSV</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-                Glissez votre fichier <code>prog_nova.csv</code> pour le convertir au format SmartTDE (prix en centimes, pas de TVA).
-            </p>
-            <div class="drop-zone" id="dropZoneTde">
-                <p>Glissez votre fichier <strong>prog_nova.csv</strong> ici</p>
-                <input type="file" id="fileInputTde" accept=".csv" style="display: none;">
-            </div>
-            <div class="status" id="tdeStatus"></div>
-            <div id="logTde" class="log-console" style="display:none;"></div>
-        </div>
-    </div>
-
-    <!-- TAB 5: REVERSE -->
-    <div id="tab-reverse" class="tab-content">
-        <div class="card">
-            <h3>🔄 Extracteur : JSON Popina ➔ CSV Tableur</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-                Déposez un fichier <code>.json</code> d'export de Back-Office Popina pour extraire sa carte et obtenir un fichier CSV propre.
-            </p>
-            <div class="drop-zone" id="dropZoneReverse">
-                <p>Glissez votre fichier <strong>.json</strong> Popina ici</p>
-                <input type="file" id="fileInputReverse" accept=".json" style="display: none;">
-            </div>
-            <div class="status" id="reverseStatus"></div>
-            <div id="logReverse" class="log-console" style="display:none;"></div>
-        </div>
-    </div>
-
+<!-- 2. Import -->
+<div class="card">
+  <h3><span class="step">2</span> Importer un fichier</h3>
+  <div class="drop" id="drop">
+    <div>Glissez ici votre fichier ou cliquez pour parcourir</div>
+    <small>Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b></small>
+    <input type="file" id="file" accept=".csv,.json,.txt" style="display:none">
+  </div>
+  <div class="toolbar" style="margin-top:.7rem">
+    <button class="b-sec" id="btnSample">Charger un exemple CSV</button>
+    <button class="b-danger" id="btnClear" disabled>Tout vider</button>
+    <span class="sub" id="srcInfo"></span>
+  </div>
+  <div class="log" id="log" style="display:none"></div>
 </div>
 
+<!-- 3. Édition -->
+<div class="card" id="editorCard" style="display:none">
+  <h3><span class="step">3</span> Vérifier &amp; éditer</h3>
+  <div class="chips" id="chips"></div>
+
+  <div class="tabs">
+    <button class="tab on" data-pane="pItems">Articles</button>
+    <button class="tab" data-pane="pLists">Listes de condiments</button>
+  </div>
+
+  <div class="pane on" id="pItems">
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="🔎 Filtrer (nom, groupe, famille)…">
+      <button class="b-sec" id="btnAdd">+ Article</button>
+      <span class="sub">TVA en masse :</span>
+      <select id="bulkTva"><option value="">—</option><option>5.5</option><option>10</option><option>20</option></select>
+      <button class="b-sec" id="btnBulkTva">Appliquer aux lignes affichées</button>
+      <button class="b-sec" id="btnDedupe">Fusionner doublons</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Groupe</th><th>Famille</th><th>Article</th><th>Prix place €</th><th>TVA %</th><th>Prix empt. €</th><th>TVA %</th><th>Listes</th><th></th></tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <div class="hint">💡 Cellules orange = à vérifier (prix 0, TVA hors 5,5/10/20, doublon). Rouge = invalide.</div>
+  </div>
+
+  <div class="pane" id="pLists">
+    <div class="scroll"><table>
+      <thead><tr><th>Nom de la liste</th><th>Options</th><th>Obligatoire</th><th>Choix multiple</th><th>Articles liés</th></tr></thead>
+      <tbody id="lbody"></tbody>
+    </table></div>
+    <div class="hint">Les listes proviennent de Nova (LC/LK) ou d'un JSON Popina existant.</div>
+  </div>
+</div>
+
+<!-- 4. Export -->
+<div class="card" id="exportCard" style="display:none">
+  <h3><span class="step">4</span> Exporter</h3>
+  <div class="exports">
+    <div class="exp"><h4>📦 JSON Back-Office Popina</h4><p>Carte complète + listes + paramètres de l'établissement.</p><button class="b-primary" data-exp="json">Télécharger .json</button></div>
+    <div class="exp"><h4>📄 CSV Popina (tableur)</h4><p>Pour retravailler sous Excel (UTF-8 BOM, séparateur ;).</p><button class="b-primary" data-exp="csv">Télécharger .csv</button></div>
+    <div class="exp"><h4>🧾 CSV SmartTDE</h4><p>Prix en centimes, sans TVA.</p><button class="b-primary" data-exp="tde">Télécharger .csv</button></div>
+  </div>
+</div>
+
+</div>
+<div id="toast"></div>
+
 <script>
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-        const tabs = ['tab-nova-json', 'tab-json', 'tab-nova', 'tab-tde', 'tab-reverse'];
-        const btnIndex = tabs.indexOf(tabId);
-        if (btnIndex !== -1) document.querySelectorAll('.tab-btn')[btnIndex].classList.add('active');
-        const targetContent = document.getElementById(tabId);
-        if (targetContent) targetContent.classList.add('active');
-    }
-
-    function log(consoleId, msg) {
-        const consoleEl = document.getElementById(consoleId);
-        if(!consoleEl) return;
-        consoleEl.style.display = 'block';
-        consoleEl.innerHTML += `[${new Date().toLocaleTimeString()}] ${msg}<br>`;
-        consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
-
-    function calculerTVA() {
-        const companyField = document.getElementById('ticket_company');
-        const tvaField = document.getElementById('ticket_tva');
-        if (!companyField) return;
-        const digits = companyField.value.replace(/\D/g, '');
-        if (digits.length >= 9) {
-            const sirenStr = digits.substring(0, 9);
-            const sirenNum = parseInt(sirenStr, 10);
-            const cle = (12 + 3 * (sirenNum % 97)) % 97;
-            const cleStr = cle < 10 ? '0' + cle : '' + cle;
-            tvaField.value = `FR${cleStr}${sirenStr}`;
-        } else {
-            alert("Veuillez d'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.");
-        }
-    }
-
-    function calculerTVACsv() {
-        const companyField = document.getElementById('ticket_company_csv');
-        const tvaField = document.getElementById('ticket_tva_csv');
-        if (!companyField) return;
-        const digits = companyField.value.replace(/\D/g, '');
-        if (digits.length >= 9) {
-            const sirenStr = digits.substring(0, 9);
-            const sirenNum = parseInt(sirenStr, 10);
-            const cle = (12 + 3 * (sirenNum % 97)) % 97;
-            const cleStr = cle < 10 ? '0' + cle : '' + cle;
-            tvaField.value = `FR${cleStr}${sirenStr}`;
-        } else {
-            alert("Veuillez d'abord saisir votre numéro SIRET ou SIREN (au moins 9 chiffres) dans le champ SIRET.");
-        }
-    }
-
-    function generateUUID() {
-        if (window.crypto && typeof window.crypto.randomUUID === 'function') {
-            return window.crypto.randomUUID();
-        }
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
-        });
-    }
-
-    function escapeHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
-
-    function sanitizeName(str) {
-        if (!str) return "";
-        let clean = String(str).replace(/[\x00-\x1F\x7F-\x9F]/g, '').replace(/\u00A0/g, ' ').trim();
-        if (clean.length > 254) clean = clean.substring(0, 254);
-        return clean;
-    }
-
-    function resolveTaxId(tvaInput) {
-        const num = parseFloat(String(tvaInput).replace(',', '.').replace('%', '').trim());
-        if (isNaN(num)) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
-        if (Math.abs(num - 20) < 0.5) return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
-        if (Math.abs(num - 10) < 0.5) return "59f651fc-4f27-4a0a-98ba-e70d3e218e33";
-        if (Math.abs(num - 5.5) < 0.5) return "e377eecb-78e8-4d2f-9020-9f790388584a";
-        return "A58D3A44-34B1-46FC-8481-8101542DA4DE";
-    }
-
-    const targetPaymentMethods = [
-        { "client_id": "06AC959D-5A58-45F9-8894-62543F1814C7", "name": "Titre restaurant", "mode": 2, "index": 2, "enabled": true, "change": false, "drawer": true, "should_print": true },
-        { "client_id": "F0CC63FF-2E20-40A4-B1B1-27C02177D63D", "name": "Mews", "mode": 11, "index": 9, "enabled": false, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "F3DD06FF-71CE-4800-92C7-BAFCF6D3A5E7", "name": "Espèces", "mode": 0, "index": 0, "enabled": true, "change": true, "drawer": true, "should_print": false },
-        { "client_id": "9DD1C2C1-A0B5-436B-88DF-A9145227D555", "name": "Deliveroo", "mode": 15, "index": 12, "enabled": false, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "AFEA6F7D-3697-4BE3-BD94-372B046F483A", "name": "Carte de crédit", "mode": 1, "index": 1, "enabled": true, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "0E59B53C-1D23-419D-8ECC-1ED878E82866", "name": "Chèque", "mode": 3, "index": 3, "enabled": true, "change": false, "drawer": true, "should_print": false },
-        { "client_id": "D74176CF-FFD8-428F-BCCB-43A71D820853", "name": "Avoir", "mode": 5, "index": 5, "enabled": true, "change": false, "drawer": true, "should_print": true },
-        { "client_id": "8E54A99A-A9E8-4B15-A400-AE81092CEF8B", "name": "Uber eats", "mode": 13, "index": 7, "enabled": false, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "18652D17-5826-4B84-9E97-673C8B5CD54B", "name": "American Express", "mode": 4, "index": 4, "enabled": true, "change": true, "drawer": false, "should_print": false },
-        { "client_id": "6DDFB5C7-C1B1-43A9-979A-6ADAC3808042", "name": "Resto Flash", "mode": 10, "index": 8, "enabled": false, "change": false, "drawer": true, "should_print": false },
-        { "client_id": "D3158781-53BE-40C4-BFF3-B596A421F34A", "name": "Foxorder", "mode": 9, "index": 6, "enabled": false, "change": true, "drawer": false, "should_print": false },
-        { "client_id": "2528fdb4-7c79-42e9-955d-22310dcc39c7", "name": "iZettle", "mode": 7, "index": 11, "enabled": false, "change": true, "drawer": false, "should_print": false },
-        { "client_id": "B7D76868-5AF6-46E6-BCFD-DD33CA69A739", "name": "Compte client", "mode": 8, "index": 10, "enabled": false, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "B97D0350-92BF-4480-9B08-2ECDBCB11ED8", "name": "Cagnotte", "mode": 14, "index": 11, "enabled": false, "change": false, "drawer": false, "should_print": false },
-        { "client_id": "a11686af-2507-4104-bba8-141f5bfd7682", "name": "Virement", "mode": 20, "index": 15, "enabled": false, "change": true, "drawer": true, "should_print": false }
-    ];
-
-    const targetPriceTypes = [
-        { "client_id": "E6D99B0E-0145-40DF-941A-FA1C2F1AE554", "name": "A emporter", "price_type": 3, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "AFD68C4B-66DF-408A-BD10-3966970B355B", "name": "Comptoir", "price_type": 2, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "B1F8F670-2753-406B-88E7-5DA7C991A203", "name": "Happy Hour", "price_type": 1, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "98E1BF35-D34E-400B-9536-C27F7BCA7E92", "name": "Prix Spécial", "price_type": 5, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "4C80E382-C753-4C6C-9CFF-B208A055DC12", "name": "Prix au poids (Kg)", "price_type": 6, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "A0864129-2860-4B51-9CDC-81A208B51368", "name": "Terrasse", "price_type": 4, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] },
-        { "client_id": "5730074E-AEAB-412B-90F8-7655D31168B5", "name": "Normal", "price_type": 0, "enabled": true, "date_begin": null, "date_end": null, "price_type_times": [] }
-    ];
-
-    function getStrictPopinaBaseData(storeName, companySiret, numTva, codeNaf, address, zip, city, phone, gerantCode, nowISO) {
-        return {
-            "name": storeName,
-            "locale": "fr_FR",
-            "last_update": nowISO,
-            "next_avoir_number": 0,
-            "ticket_name": storeName,
-            "ticket_address": address,
-            "ticket_text": "Champ libre",
-            "ticket_company": companySiret ? ` ${companySiret} ` : "",
-            "ticket_phone": phone,
-            "ticket_zip": zip,
-            "ticket_city": city,
-            "ticket_country": "France",
-            "ticket_url": "",
-            "ticket_naf": codeNaf ? ` ${codeNaf} ` : "",
-            "ticket_tva": numTva ? ` ${numTva} ` : "",
-            "ticket_footer_note": "Merci de votre visite",
-            "ticket_image_url": "https://firebasestorage.googleapis.com:443/v0/b/jalia-prod.appspot.com/o/ticket-13.jpg?alt=media&token=a74ec29d-bda3-4a1e-8fcb-46e6dc2a7138",
-            "ticket_company_name": storeName,
-            "setting_cut_kitchen_ticket": false,
-            "setting_only_first_kitchen_ticket": false,
-            "setting_send_preparation_on": true,
-            "setting_happy_hour_on": true,
-            "setting_detailed_report": true,
-            "setting_total_raw": false,
-            "setting_not_claim": false,
-            "setting_close_after_transmitted": true,
-            "setting_send_tills": true,
-            "setting_send_tills_live": true,
-            "setting_use_qrcode": false,
-            "setting_manual_steps_activated": true,
-            "setting_print_on_pay": true,
-            "number_of_preparation_steps": 3,
-            "setting_ask_cash_in": false,
-            "setting_group_item_kitchen": true,
-            "setting_not_claim_content": false,
-            "setting_allow_gap_till": true,
-            "setting_detailed_menus": false,
-            "setting_compact_order": true,
-            "setting_print_menu_on_preparation": false,
-            "setting_print_option_group_on_preparation": false,
-            "number_of_lines": 8,
-            "number_of_menus": 8,
-            "number_of_selections": 8,
-            "exercice_date": nowISO,
-            "taxes": [
-                { "client_id": "e377eecb-78e8-4d2f-9020-9f790388584a", "name": "TVA 5,5", "percentage": 550 },
-                { "client_id": "A58D3A44-34B1-46FC-8481-8101542DA4DE", "name": "TVA 20", "percentage": 2000 },
-                { "client_id": "59f651fc-4f27-4a0a-98ba-e70d3e218e33", "name": "TVA 10", "percentage": 1000 }
-            ],
-            "payment_methods": targetPaymentMethods,
-            "price_types": targetPriceTypes,
-            "printers": [],
-            "places": [
-                { "client_id": "5F6F94EC-19FE-44DA-B5AF-8989AC340E44", "creation_date": nowISO, "name": "Cuisine", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] },
-                { "client_id": "CBC89272-5DC4-4E60-B2E4-A0650E41822F", "creation_date": nowISO, "name": "Bar", "shloud_print_all_items": false, "printer_id": null, "should_print_unknown_items": false, "items": [] }
-            ],
-            "place_printer_links": [],
-            "stock": [],
-            "discounts": [
-                { "client_id": "7BD93B09-2744-4018-9FDB-95A96F323FE3", "amount": 10000, "name": "Offert", "discount_type": 1, "index": 0, "date_creation": nowISO, "apply_on_units": false }
-            ],
-            "cash_movement_motifs": [],
-            "third_parties": [],
-            "bookings": [],
-            "customers": [],
-            "people": [{
-                "client_id": "4AC6F559-74DB-45ED-AAB8-14B9DAAC6851",
-                "name": "Gérant",
-                "password": gerantCode,
-                "pass_key": gerantCode,
-                "is_root": true,
-                "right_person": true,
-                "right_till": true,
-                "right_report": true,
-                "right_all_orders": true,
-                "right_apply_discount": true,
-                "right_edit_discount": true,
-                "right_delete_order": null,
-                "right_cancel_order": true,
-                "right_stats_till": true,
-                "right_card": true,
-                "right_device": true,
-                "right_custom_price": true,
-                "right_payment_type": true,
-                "right_payment_order": true,
-                "qrcode": null,
-                "key_dallas": null,
-                "color_blind_mode_on": false,
-                "right_automatic_cash_drawer": true,
-                "right_full_stats": true,
-                "right_happy_hour": true,
-                "right_payed_customer": true,
-                "right_client": true,
-                "right_manual_cash_drawer": true,
-                "right_ownership": true,
-                "right_edit_price_type": true,
-                "right_transfer_order": true,
-                "right_cancel_order_after_note": true,
-                "right_edit_justificatif": true,
-                "right_update_order_after_note": true
-            }],
-            "rooms": [
-                { "client_id": "014FB172-5E2D-49F2-8CB3-46F8F96EA6A2", "name": "Salle 1", "type": 0, "price_type": 0, "index": 1, "enabled": true, "date_creation": nowISO, "setting_ask_number_guests": true, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": false, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] },
-                { "client_id": "D403C194-E0D4-40C4-AEA6-09E751B7F14A", "name": "Comptoir", "type": 1, "price_type": 2, "index": 6, "enabled": true, "date_creation": nowISO, "setting_ask_number_guests": false, "setting_close_after_paid": null, "setting_payment_method_shortcut": null, "setting_new_order_after_paid": true, "setting_open_payment_on_printing": null, "setting_transmit_on_payment": false, "bippers_activated": false, "setting_logout_on_transmit": false, "number_of_additional_note_prints": 0, "should_display_owner_on_table": true, "setting_logout_on_payment": false, "should_send_to_preparation_on_close": true, "tables": [] }
-            ]
-        };
-    }
-
-    function createStrictItem(rowName, itemId, nowISO, itemPrices, macroId, sharedOptions) {
-        return {
-            "name": rowName,
-            "client_id": itemId,
-            "modular_price": false,
-            "preparation_step_index": -1,
-            "screen_name": null,
-            "kitchen_name": null,
-            "sku": null,
-            "date_creation": nowISO,
-            "barcode": null,
-            "is_weight_price": false,
-            "kilo_price": 0.0,
-            "item_is_limodade": false,
-            "option_categories": [],
-            "prices": itemPrices,
-            "macro_category": { "client_id": macroId },
-            "shared_option_categories": sharedOptions
-        };
-    }
-
-    function createStrictMacroCategory(id, name, index) {
-        return {
-            "client_id": id,
-            "name": name,
-            "index": index,
-            "color": 0,
-            "image": "Fichier 9",
-            "preparation_step_index": -1,
-            "number_of_categories": 8
-        };
-    }
-
-    // TAB 1: NOVA TO POPINA JSON
-    const dropZoneNovaJson = document.getElementById('dropZoneNovaJson');
-    const fileInputNovaJson = document.getElementById('fileInputNovaJson');
-    const novaJsonStatus = document.getElementById('novaJsonStatus');
-
-    if(dropZoneNovaJson && fileInputNovaJson) {
-        dropZoneNovaJson.addEventListener('click', () => fileInputNovaJson.click());
-        dropZoneNovaJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNovaJson.classList.add('dragover'); });
-        dropZoneNovaJson.addEventListener('dragleave', () => dropZoneNovaJson.classList.remove('dragover'));
-        dropZoneNovaJson.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZoneNovaJson.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleFileNovaJson(e.dataTransfer.files[0]);
-        });
-        fileInputNovaJson.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFileNovaJson(e.target.files[0]);
-        });
-    }
-
-    function handleFileNovaJson(file) {
-        if(!novaJsonStatus) return;
-        novaJsonStatus.className = 'status';
-        novaJsonStatus.textContent = "Lecture et conversion en cours...";
-        const logConsole = document.getElementById('logNovaJson');
-        if(logConsole) logConsole.innerHTML = '';
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                processNovaToJsonStrict(e.target.result);
-            } catch (err) {
-                console.error(err);
-                novaJsonStatus.className = 'status error';
-                novaJsonStatus.textContent = "Erreur lors de la conversion du fichier.";
-            }
-        };
-        reader.readAsText(file, 'ISO-8859-1');
-    }
-
-    function processNovaToJsonStrict(content) {
-        log('logNovaJson', 'Analyse du fichier Nova (Extraction précise des listes LC/LK)...');
-        const lines = content.split(/\r?\n/);
-        
-        let sections = {};
-        let currentSection = null;
-        let headers = {};
-
-        for (let line of lines) {
-            line = line.trim();
-            if (!line || line.startsWith('!')) continue;
-
-            const parts = line.split(';');
-            if (parts.length > 1 && !parts[0].match(/^\d+$/)) {
-                currentSection = parts[0];
-                headers[currentSection] = parts;
-                sections[currentSection] = [];
-                continue;
-            }
-            if (currentSection && parts.length > 0 && parts[0].match(/^\d+$/)) {
-                sections[currentSection].push(parts);
-            }
-        }
-
-        let groups = {};
-        if (sections['G']) sections['G'].forEach(p => groups[p[0]] = sanitizeName(p[1]));
-
-        let depts = {};
-        if (sections['D']) {
-            let h = headers['D'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 9;
-            let idxGroup = h.indexOf('GROUP') > -1 ? h.indexOf('GROUP') : 10;
-            sections['D'].forEach(p => { depts[p[0]] = { desc: sanitizeName(p[idxDesc]), group: p[idxGroup] }; });
-        }
-
-        let cItems = {};
-        if (sections['C']) {
-            let h = headers['C'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 1;
-            let idxPrice = h.indexOf('PRICE') > -1 ? h.indexOf('PRICE') : 2;
-            sections['C'].forEach(p => {
-                cItems[p[0]] = { name: sanitizeName(p[idxDesc]), price: parseFloat((p[idxPrice]||'0').replace(',', '.')) || 0 };
-            });
-        }
-        
-        let kItems = {};
-        if (sections['K']) {
-            let h = headers['K'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 1;
-            sections['K'].forEach(p => {
-                kItems[p[0]] = { name: sanitizeName(p[idxDesc]), price: 0 };
-            });
-        }
-
-        let novaLists = {};
-        
-        if (sections['LC']) {
-            let h = headers['LC'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 1;
-            let idxItem = h.indexOf('ITEM') > -1 ? h.indexOf('ITEM') : 2;
-            sections['LC'].forEach(p => {
-                let listId = p[0];
-                if (!novaLists[listId]) novaLists[listId] = { name: sanitizeName(p[idxDesc]), options: [] };
-                if (cItems[p[idxItem]]) novaLists[listId].options.push(cItems[p[idxItem]]);
-            });
-        }
-
-        if (sections['LK']) {
-            let h = headers['LK'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 1;
-            let idxItem = h.indexOf('ITEM') > -1 ? h.indexOf('ITEM') : 2;
-            sections['LK'].forEach(p => {
-                let listId = p[0];
-                if (!novaLists[listId]) novaLists[listId] = { name: sanitizeName(p[idxDesc]), options: [] };
-                if (kItems[p[idxItem]]) novaLists[listId].options.push(kItems[p[idxItem]]);
-            });
-        }
-
-        log('logNovaJson', `${Object.keys(novaLists).length} listes nommées trouvées (Sauces, Cuissons, etc.).`);
-
-        let articles = [];
-        if (sections['A']) {
-            let h = headers['A'] || [];
-            let idxDesc = h.indexOf('DESC') > -1 ? h.indexOf('DESC') : 19;
-            let idxGroup = h.indexOf('GROUP') > -1 ? h.indexOf('GROUP') : 20;
-            let idxDept = h.indexOf('DEPT') > -1 ? h.indexOf('DEPT') : 71;
-            let idxPrice1 = h.indexOf('PRICE1') > -1 ? h.indexOf('PRICE1') : 27;
-            let idxPrice2 = h.indexOf('PRICE2') > -1 ? h.indexOf('PRICE2') : 28;
-            let idxTax1 = h.indexOf('TAX1') > -1 ? h.indexOf('TAX1') : 2;
-            let idxTax2 = h.indexOf('TAX2') > -1 ? h.indexOf('TAX2') : 3;
-            
-            let comboIndices = [];
-            for (let i = 0; i < h.length; i++) {
-                if (h[i].startsWith('COMBOLINK')) {
-                    comboIndices.push(i);
-                }
-            }
-
-            sections['A'].forEach(p => {
-                let name = sanitizeName(p[idxDesc]);
-                let disabled = p[9];
-                if (disabled === '1' || !name || name === '0') return;
-
-                let links = [];
-                comboIndices.forEach(idx => {
-                    if (p[idx] && p[idx] !== '0' && p[idx] !== '') links.push(p[idx]);
-                });
-
-                articles.push({
-                    id: p[0], name: name, groupId: p[idxGroup], deptId: p[idxDept],
-                    price1: parseFloat((p[idxPrice1]||'0').replace(',', '.')) || 0,
-                    price2: parseFloat((p[idxPrice2]||'0').replace(',', '.')) || 0,
-                    tax1Code: p[idxTax1], tax2Code: p[idxTax2],
-                    links: [...new Set(links)]
-                });
-            });
-        }
-
-        log('logNovaJson', `${articles.length} articles actifs trouvés.`);
-
-        const nowISO = new Date().toISOString();
-        
-        const storeName = sanitizeName(document.getElementById('ticket_name').value) || "Export NOVA direct";
-        const companySiret = sanitizeName(document.getElementById('ticket_company').value);
-        const numTva = sanitizeName(document.getElementById('ticket_tva').value);
-        const codeNaf = sanitizeName(document.getElementById('ticket_naf').value);
-        const address = sanitizeName(document.getElementById('ticket_address').value);
-        const zip = sanitizeName(document.getElementById('ticket_zip').value);
-        const city = sanitizeName(document.getElementById('ticket_city').value);
-        const phone = sanitizeName(document.getElementById('ticket_phone').value);
-        const gerantCode = sanitizeName(document.getElementById('gerant_code').value) || "0000";
-
-        const macroCategoriesMap = new Map();
-        const categoriesMap = new Map();
-        const macroCatFamilyCounter = new Map();
-        
-        const finalSharedOptions = [];
-        const popinaGroupMap = {};
-
-        let listIndex = 0;
-        Object.keys(novaLists).forEach(listId => {
-            const listObj = novaLists[listId];
-            if(listObj.options.length === 0) return;
-
-            const popinaGroupId = generateUUID();
-            popinaGroupMap[listId] = popinaGroupId;
-            
-            const options = listObj.options.map((cond, i) => ({
-                "client_id": generateUUID(),
-                "index": i,
-                "name": cond.name,
-                "price": Math.round(cond.price * 100)
-            }));
-
-            finalSharedOptions.push({
-                "client_id": popinaGroupId,
-                "index": listIndex++,
-                "name": listObj.name,
-                "is_mandatory": true,
-                "is_multiple": false,
-                "options": options
-            });
-        });
-
-        const finalItems = [];
-
-        articles.forEach(art => {
-            let groupName = groups[art.groupId] || "DIVERS";
-            let deptObj = depts[art.deptId];
-            let categoryName = deptObj ? deptObj.desc : groupName;
-
-            if (!macroCategoriesMap.has(groupName)) { macroCategoriesMap.set(groupName, { id: generateUUID(), index: macroCategoriesMap.size }); }
-            const macroObj = macroCategoriesMap.get(groupName);
-            if (!macroCatFamilyCounter.has(macroObj.id)) macroCatFamilyCounter.set(macroObj.id, 0);
-
-            const catKey = `${groupName}__${categoryName}`;
-            if (!categoriesMap.has(catKey)) {
-                const familyIndex = macroCatFamilyCounter.get(macroObj.id);
-                macroCatFamilyCounter.set(macroObj.id, familyIndex + 1);
-                categoriesMap.set(catKey, { id: generateUUID(), name: categoryName, macroId: macroObj.id, indexInGroup: familyIndex, positions: [] });
-            }
-            const catObj = categoriesMap.get(catKey);
-
-            const itemId = generateUUID();
-            
-            const itemSharedOptions = [];
-            art.links.forEach(linkID => {
-                if (popinaGroupMap[linkID]) {
-                    itemSharedOptions.push({ "client_id": popinaGroupMap[linkID] });
-                }
-            });
-
-            const tvaSurPlace = getTvaValue(art.tax1Code);
-            const itemPrices = [{
-                "client_id": generateUUID(), "name": null, "amount": Math.round(art.price1 * 100), "price_type": 0, "tax": { "client_id": resolveTaxId(tvaSurPlace) }
-            }];
-
-            if (art.price2 > 0) {
-                const tvaEmporter = getTvaValue(art.tax2Code !== "" ? art.tax2Code : art.tax1Code);
-                itemPrices.push({
-                    "client_id": generateUUID(), "name": null, "amount": Math.round(art.price2 * 100), "price_type": 3, "tax": { "client_id": resolveTaxId(tvaEmporter) }
-                });
-            }
-
-            finalItems.push(createStrictItem(art.name, itemId, nowISO, itemPrices, macroObj.id, itemSharedOptions));
-
-            catObj.positions.push({ "client_id": generateUUID(), "highlight_level": 0, "brightness_level": 0, "alternate_color": -1, "index": catObj.positions.length, "item": { "client_id": itemId } });
-        });
-
-        const parsedMacroCategories = [];
-        macroCategoriesMap.forEach((val, gName) => {
-            parsedMacroCategories.push(createStrictMacroCategory(val.id, gName, val.index));
-        });
-
-        const parsedCardCategories = [];
-        categoriesMap.forEach((val) => {
-            parsedCardCategories.push({
-                "client_id": val.id, "name": val.name, "index": val.indexInGroup,
-                "number_of_columns": 2, "number_of_lines": 8, "positions": val.positions,
-                "macro_category": { "client_id": val.macroId }
-            });
-        });
-
-        const finalJsonData = getStrictPopinaBaseData(storeName, companySiret, numTva, codeNaf, address, zip, city, phone, gerantCode, nowISO);
-        finalJsonData.macro_categories = parsedMacroCategories;
-        finalJsonData.shared_option_categories = finalSharedOptions;
-        finalJsonData.items = finalItems;
-        finalJsonData.cards = [{ "client_id": generateUUID(), "name": "Carte Principale", "categories": parsedCardCategories, "selections": [], "menus": [] }];
-
-        log('logNovaJson', 'Création du fichier JSON STRICT...');
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
-        const downloadAnchor = document.createElement('a');
-        downloadAnchor.setAttribute("href", dataStr);
-        const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "nova_complet") + "_popina.json";
-        downloadAnchor.setAttribute("download", fileName);
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-
-        novaJsonStatus.className = 'status success';
-        novaJsonStatus.textContent = `Succès ! ${articles.length} articles et ${finalSharedOptions.length} listes de condiments exportées avec succès.`;
-    }
-
-    // TAB 2: CSV POPINA TO JSON BO
-    const dropZoneJson = document.getElementById('dropZoneJson');
-    const fileInputJson = document.getElementById('fileInputJson');
-    const previewCard = document.getElementById('previewCard');
-    const previewTableBody = document.querySelector('#previewTable tbody');
-    const downloadBtn = document.getElementById('downloadBtn');
-
-    let parsedRowsData = [];
-
-    if(dropZoneJson && fileInputJson) {
-        dropZoneJson.addEventListener('click', () => fileInputJson.click());
-        dropZoneJson.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneJson.classList.add('dragover'); });
-        dropZoneJson.addEventListener('dragleave', () => dropZoneJson.classList.remove('dragover'));
-        dropZoneJson.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZoneJson.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleFileJson(e.dataTransfer.files[0]);
-        });
-        fileInputJson.addEventListener('change', (e) => {
-            if (e.target.files.length) handleFileJson(e.target.files[0]);
-        });
-    }
-
-    function handleFileJson(file) {
-        log('logJson', `Chargement de ${file.name}...`);
-        const reader = new FileReader();
-        reader.onload = function(e) { parseCSVJson(e.target.result); };
-        reader.readAsText(file, 'UTF-8');
-    }
-
-    function parseCSVLine(line, delimiter) {
-        const result = [];
-        let cur = '';
-        let inQuotes = false;
-        for (let i = 0; i < line.length; i++) {
-            const char = line[i];
-            if (char === '"') {
-                if (inQuotes && line[i + 1] === '"') {
-                    cur += '"';
-                    i++;
-                } else {
-                    inQuotes = !inQuotes;
-                }
-            } else if (char === delimiter && !inQuotes) {
-                result.push(cur.trim());
-                cur = '';
-            } else {
-                cur += char;
-            }
-        }
-        result.push(cur.trim());
-        return result;
-    }
-
-    function parseCSVJson(text) {
-        const lines = text.split(/\r?\n/);
-        if (lines.length < 2) { alert('Le fichier CSV est vide.'); return; }
-
-        const delimiter = text.includes(';') ? ';' : ',';
-        const headers = parseCSVLine(lines[0], delimiter).map(h => h.toLowerCase());
-
-        let idxGroupe = headers.findIndex(h => h.includes('groupe') || h.includes('macro'));
-        let idxCat = headers.findIndex((h, idx) => idx !== idxGroupe && (h.includes('famille') || h.includes('categorie') || h.includes('sous-cat')));
-        let idxNom = headers.findIndex(h => h.includes('description') || h.includes('nom') || h.includes('article'));
-        let idxPrix = headers.findIndex(h => h.includes('prix sur place') || h.includes('prix 1') || h.includes('prix_ttc') || h === 'prix');
-        let idxTva = headers.findIndex(h => h.includes('tva sur place') || h === 'tva');
-        let idxPrix2 = headers.findIndex(h => h.includes('prix emporter') || h.includes('prix 2'));
-        let idxTva2 = headers.findIndex(h => h.includes('tva emporter') || h.includes('tva 2'));
-
-        if (idxGroupe === -1) {
-            if (headers.length >= 2 && (headers[0].includes('cat') || headers[0].includes('famille')) && (headers[1].includes('cat') || headers[1].includes('famille'))) {
-                idxGroupe = 0; idxCat = 1;
-            } else {
-                idxGroupe = -1; if (idxCat === -1) idxCat = 0;
-            }
-        }
-
-        if (idxNom === -1) idxNom = 2;
-        if (idxPrix === -1) idxPrix = 3;
-        if (idxTva === -1) idxTva = 4;
-        if (idxPrix2 === -1 && headers.length > 5) idxPrix2 = 5;
-        if (idxTva2 === -1 && headers.length > 6) idxTva2 = 6;
-
-        if(previewTableBody) previewTableBody.innerHTML = '';
-        parsedRowsData = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            const cols = parseCSVLine(lines[i], delimiter);
-
-            const groupeName = idxGroupe >= 0 ? sanitizeName(cols[idxGroupe] || 'Groupe 1') : 'Groupe 1';
-            const categoryName = sanitizeName(cols[idxCat] || 'Général');
-            const name = sanitizeName(cols[idxNom] || '');
-            const rawPrix = (cols[idxPrix] || '0').replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
-            const rawTva = (cols[idxTva] || '20').replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim();
-            const rawPrix2 = idxPrix2 >= 0 && cols[idxPrix2] ? cols[idxPrix2].replace('€', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
-            const rawTva2 = idxTva2 >= 0 && cols[idxTva2] ? cols[idxTva2].replace('%', '').replace(',', '.').replace(/[^0-9.]/g, '').trim() : '';
-
-            if (name) {
-                const itemObj = {
-                    groupe: groupeName,
-                    category: categoryName,
-                    name: name,
-                    price: parseFloat(rawPrix) || 0,
-                    tva: rawTva || "20",
-                    price2: rawPrix2 !== '' ? (parseFloat(rawPrix2) || 0) : null,
-                    tva2: rawTva2 !== '' ? rawTva2 : (rawPrix2 !== '' ? (rawTva || "20") : null)
-                };
-                parsedRowsData.push(itemObj);
-
-                if(previewTableBody) {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${escapeHtml(itemObj.groupe)}</td>
-                        <td>${escapeHtml(itemObj.category)}</td>
-                        <td contenteditable="true" data-field="name" data-index="${parsedRowsData.length - 1}"><strong>${escapeHtml(itemObj.name)}</strong></td>
-                        <td contenteditable="true" data-field="price" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.price.toFixed(2))}</td>
-                        <td contenteditable="true" data-field="tva" data-index="${parsedRowsData.length - 1}">${escapeHtml(itemObj.tva)}</td>
-                        <td contenteditable="true" data-field="price2" data-index="${parsedRowsData.length - 1}">${itemObj.price2 !== null ? escapeHtml(itemObj.price2.toFixed(2)) : ''}</td>
-                        <td contenteditable="true" data-field="tva2" data-index="${parsedRowsData.length - 1}">${itemObj.tva2 !== null ? escapeHtml(itemObj.tva2) : ''}</td>
-                    `;
-                    previewTableBody.appendChild(tr);
-                }
-            }
-        }
-
-        if(previewTableBody) {
-            previewTableBody.querySelectorAll('td[contenteditable="true"]').forEach(td => {
-                td.addEventListener('blur', (e) => {
-                    const idx = parseInt(e.target.getAttribute('data-index'), 10);
-                    const field = e.target.getAttribute('data-field');
-                    let val = e.target.innerText.trim();
-                    let invalid = false;
-
-                    if (field === 'name') {
-                        if (!val) { invalid = true; val = parsedRowsData[idx].name; e.target.innerText = val; }
-                    } else if (field === 'price' || field === 'price2') {
-                        if (val === '' && field === 'price2') {
-                            val = null;
-                            e.target.innerText = '';
-                        } else {
-                            const parsed = parseFloat(val.replace(',', '.'));
-                            if (isNaN(parsed) || parsed < 0) { invalid = true; }
-                            val = isNaN(parsed) || parsed < 0 ? 0 : parsed;
-                            e.target.innerText = val.toFixed(2);
-                        }
-                    } else if (field === 'tva' || field === 'tva2') {
-                        if (val === '' && field === 'tva2') {
-                            val = null;
-                            e.target.innerText = '';
-                        } else {
-                            const parsed = parseFloat(val.replace(',', '.'));
-                            if (isNaN(parsed) || parsed < 0 || parsed > 100) { invalid = true; }
-                        }
-                    }
-
-                    e.target.style.outlineColor = invalid ? 'var(--danger)' : '';
-                    e.target.style.background = invalid ? '#ef444422' : '';
-
-                    parsedRowsData[idx][field] = val;
-                    if (invalid) {
-                        log('logJson', `⚠ Valeur invalide pour "${parsedRowsData[idx].name}" (${field}), vérifiez avant export.`);
-                    } else {
-                        log('logJson', `Modification enregistrée : ${parsedRowsData[idx].name} -> ${field}: ${val}`);
-                    }
-                });
-            });
-        }
-
-        if(previewCard) previewCard.style.display = 'block';
-        log('logJson', `Parsing réussi : ${parsedRowsData.length} articles extraits.`);
-    }
-
-    if(downloadBtn) {
-        downloadBtn.addEventListener('click', () => {
-            const jsonStatus = document.getElementById('jsonStatus');
-            if (!parsedRowsData.length) {
-                if(jsonStatus) {
-                    jsonStatus.className = 'status error';
-                    jsonStatus.textContent = "Aucune donnée à exporter. Importez d'abord un fichier CSV.";
-                }
-                return;
-            }
-
-            const storeName = sanitizeName(document.getElementById('ticket_name_csv').value) || "MON COMMERCE";
-            const companySiret = sanitizeName(document.getElementById('ticket_company_csv').value);
-            const numTva = sanitizeName(document.getElementById('ticket_tva_csv').value);
-            const codeNaf = sanitizeName(document.getElementById('ticket_naf_csv').value);
-            const address = sanitizeName(document.getElementById('ticket_address_csv').value);
-            const zip = sanitizeName(document.getElementById('ticket_zip_csv').value);
-            const city = sanitizeName(document.getElementById('ticket_city_csv').value);
-            const phone = sanitizeName(document.getElementById('ticket_phone_csv').value);
-            const gerantCode = sanitizeName(document.getElementById('gerant_code_csv').value) || "0000";
-            const nowISO = new Date().toISOString();
-
-            const macroCategoriesMap = new Map();
-            const categoriesMap = new Map();
-            const macroCatFamilyCounter = new Map();
-            const finalItems = [];
-
-            parsedRowsData.forEach(row => {
-                if (!macroCategoriesMap.has(row.groupe)) {
-                    macroCategoriesMap.set(row.groupe, { id: generateUUID(), index: macroCategoriesMap.size });
-                }
-                const macroObj = macroCategoriesMap.get(row.groupe);
-
-                if (!macroCatFamilyCounter.has(macroObj.id)) {
-                    macroCatFamilyCounter.set(macroObj.id, 0);
-                }
-
-                const catKey = `${row.groupe}__${row.category}`;
-                if (!categoriesMap.has(catKey)) {
-                    const familyIndexInGroup = macroCatFamilyCounter.get(macroObj.id);
-                    macroCatFamilyCounter.set(macroObj.id, familyIndexInGroup + 1);
-
-                    categoriesMap.set(catKey, {
-                        id: generateUUID(),
-                        name: row.category,
-                        macroId: macroObj.id,
-                        indexInGroup: familyIndexInGroup,
-                        positions: []
-                    });
-                }
-                const catObj = categoriesMap.get(catKey);
-
-                const itemId = generateUUID();
-                const priceInCents = Math.round((parseFloat(row.price) || 0) * 100);
-                const taxId = resolveTaxId(row.tva);
-
-                const itemPrices = [{
-                    "client_id": generateUUID(),
-                    "name": null,
-                    "amount": priceInCents,
-                    "price_type": 0,
-                    "tax": { "client_id": taxId }
-                }];
-
-                if (row.price2 !== null && row.price2 !== undefined && !isNaN(row.price2)) {
-                    const price2InCents = Math.round((parseFloat(row.price2) || 0) * 100);
-                    const taxId2 = resolveTaxId(row.tva2 !== null ? row.tva2 : row.tva);
-                    itemPrices.push({
-                        "client_id": generateUUID(),
-                        "name": null,
-                        "amount": price2InCents,
-                        "price_type": 3,
-                        "tax": { "client_id": taxId2 }
-                    });
-                }
-
-                finalItems.push(createStrictItem(row.name, itemId, nowISO, itemPrices, macroObj.id, []));
-
-                catObj.positions.push({
-                    "client_id": generateUUID(),
-                    "highlight_level": 0,
-                    "brightness_level": 0,
-                    "alternate_color": -1,
-                    "index": catObj.positions.length,
-                    "item": { "client_id": itemId }
-                });
-            });
-
-            const parsedMacroCategories = [];
-            macroCategoriesMap.forEach((val, gName) => {
-                parsedMacroCategories.push(createStrictMacroCategory(val.id, gName, val.index));
-            });
-
-            const parsedCardCategories = [];
-            categoriesMap.forEach((val) => {
-                parsedCardCategories.push({
-                    "client_id": val.id,
-                    "name": val.name,
-                    "index": val.indexInGroup,
-                    "number_of_columns": 2,
-                    "number_of_lines": 8,
-                    "positions": val.positions,
-                    "macro_category": { "client_id": val.macroId }
-                });
-            });
-
-            const finalJsonData = getStrictPopinaBaseData(storeName, companySiret, numTva, codeNaf, address, zip, city, phone, gerantCode, nowISO);
-            finalJsonData.macro_categories = parsedMacroCategories;
-            finalJsonData.items = finalItems;
-            finalJsonData.cards = [{ "client_id": generateUUID(), "name": "Carte Principale", "categories": parsedCardCategories, "selections": [], "menus": [] }];
-
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(finalJsonData, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            const fileName = (storeName.toLowerCase().replace(/[^a-z0-9]/gi, '_') || "programmation") + "_popina.json";
-            downloadAnchor.setAttribute("download", fileName);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-
-            if(jsonStatus) {
-                jsonStatus.className = 'status success';
-                jsonStatus.textContent = `Export réussi ! ${finalItems.length} article(s), ${parsedMacroCategories.length} groupe(s) exporté(s).`;
-            }
-        });
-    }
-
-    // TAB 3: NOVA TO POPINA CSV
-    const dropZoneNova = document.getElementById('dropZoneNova');
-    const fileInputNova = document.getElementById('fileInputNova');
-    const novaStatus = document.getElementById('novaStatus');
-    if(dropZoneNova && fileInputNova) {
-        dropZoneNova.addEventListener('click', () => fileInputNova.click());
-        dropZoneNova.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneNova.classList.add('dragover'); });
-        dropZoneNova.addEventListener('dragleave', () => dropZoneNova.classList.remove('dragover'));
-        dropZoneNova.addEventListener('drop', (e) => { e.preventDefault(); dropZoneNova.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileNova(e.dataTransfer.files[0]); });
-        fileInputNova.addEventListener('change', (e) => { if (e.target.files.length) handleFileNova(e.target.files[0]); });
-    }
-
-    function handleFileNova(file) {
-        if(!novaStatus) return;
-        novaStatus.className = 'status'; novaStatus.textContent = "Traitement en cours...";
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try { const result = processNovaToPopina(e.target.result); downloadCsv(result.csv, "prog_popina_converti.csv"); novaStatus.className = 'status success'; novaStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s).`; } 
-            catch (err) { novaStatus.className = 'status error'; novaStatus.textContent = "Erreur lors de la conversion du fichier."; }
-        };
-        reader.readAsText(file, 'ISO-8859-1');
-    }
-    function formatNumber(val) { if (val === "" || val === null || val === undefined) return ""; const num = parseFloat(val); return isNaN(num) ? "" : num.toFixed(2); }
-    function getTvaValue(taxCode) {
-        if (taxCode === undefined || taxCode === null) return 20.0;
-        let clean = String(taxCode).replace('%', '').replace(',', '.').trim(); if (clean === "") return 20.0;
-        let num = parseFloat(clean); if (isNaN(num)) return 20.0; if (num === 20 || num === 10 || num === 5.5) return num;
-        switch (String(Math.round(num))) { case "0": return 10.0; case "1": return 20.0; case "2": return 5.5; case "3": return 0.0; default: return 20.0; }
-    }
-    function processNovaToPopina(content) {
-        const lines = content.split(/\r?\n/);
-        let groups = {}, depts = {}, rawArticles = [], currentSection = "";
-        for (let line of lines) {
-            line = line.trim(); if (!line) continue;
-            if (line.startsWith('G;DESC;')) { currentSection = "G"; continue; } else if (line.startsWith('D;TYPE;')) { currentSection = "D"; continue; } else if (line.startsWith('A;TYPE;')) { currentSection = "A"; continue; } else if (line.startsWith('FM;') || line.startsWith('C;')) { currentSection = "OTHER"; continue; }
-            const parts = line.split(';');
-            if (currentSection === "G" && parts.length > 1) { groups[parts[0]] = parts[1]; } else if (currentSection === "D" && parts.length > 9) { depts[parts[0]] = parts[9]; } else if (currentSection === "A" && parts.length > 28) {
-                if (parts[9] === "1" || !parts[19] || parts[19] === "0" || parts[19].length < 2) continue;
-                rawArticles.push({ name: sanitizeName(parts[19]), groupId: parts[20], deptId: parts[71], priceSurPlace: parseFloat(parts[27].replace(',', '.')) || 0, tvaSurPlace: getTvaValue(parts[2]), priceEmporter: parseFloat(parts[28].replace(',', '.')) > 0 ? parseFloat(parts[28].replace(',', '.')) : "", tvaEmporter: parseFloat(parts[28].replace(',', '.')) > 0 ? getTvaValue(parts[3] !== "" ? parts[3] : parts[2]) : "" });
-            }
-        }
-        let popinaTree = {};
-        for (let art of rawArticles) {
-            let catName = sanitizeName(groups[art.groupId] || art.groupId || "DIVERS");
-            let subCatName = sanitizeName(depts[art.deptId] || art.deptId || catName);
-            if (!popinaTree[catName]) popinaTree[catName] = { subCats: {} };
-            if (!popinaTree[catName].subCats[subCatName]) popinaTree[catName].subCats[subCatName] = [];
-            popinaTree[catName].subCats[subCatName].push(art);
-        }
-        let csvRows = [["Sous-catégorie (Famille)", "Sous-catégorie (Famille).1", "Description (Nom article)", "Prix Sur place (Prix 1)", "TVA Sur place", "Prix Emporter (Prix 2)", "TVA Emporter"].join(';')];
-        let totalCount = 0;
-        for (let cName in popinaTree) { for (let sName in popinaTree[cName].subCats) { for (let item of popinaTree[cName].subCats[sName]) { csvRows.push([`"${cName}"`, `"${sName}"`, `"${item.name}"`, formatNumber(item.priceSurPlace), formatNumber(item.tvaSurPlace), formatNumber(item.priceEmporter), formatNumber(item.tvaEmporter)].join(';')); totalCount++; } } }
-        return { csv: csvRows.join('\r\n'), count: totalCount };
-    }
-
-    // TAB 4: NOVA TO SMARTTDE
-    const dropZoneTde = document.getElementById('dropZoneTde');
-    const fileInputTde = document.getElementById('fileInputTde');
-    const tdeStatus = document.getElementById('tdeStatus');
-    if(dropZoneTde && fileInputTde) {
-        dropZoneTde.addEventListener('click', () => fileInputTde.click());
-        dropZoneTde.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneTde.classList.add('dragover'); });
-        dropZoneTde.addEventListener('dragleave', () => dropZoneTde.classList.remove('dragover'));
-        dropZoneTde.addEventListener('drop', (e) => { e.preventDefault(); dropZoneTde.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileTde(e.dataTransfer.files[0]); });
-        fileInputTde.addEventListener('change', (e) => { if (e.target.files.length) handleFileTde(e.target.files[0]); });
-    }
-
-    function handleFileTde(file) {
-        if(!tdeStatus) return;
-        tdeStatus.className = 'status'; tdeStatus.textContent = "Traitement en cours...";
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try { const result = processNovaToTDE(e.target.result); downloadCsv(result.csv, "prog_smartTDE_converti.csv", false); tdeStatus.className = 'status success'; tdeStatus.textContent = `Conversion réussie ! ${result.count} article(s) converti(s).`; } 
-            catch (err) { tdeStatus.className = 'status error'; tdeStatus.textContent = "Erreur lors de la conversion."; }
-        };
-        reader.readAsText(file, 'ISO-8859-1');
-    }
-    function processNovaToTDE(content) {
-        const lines = content.split(/\r?\n/); let groups = {}, depts = {}, articles = [], currentSection = "";
-        for (let line of lines) {
-            line = line.trim(); if (!line) continue;
-            if (line.startsWith('G;DESC;')) { currentSection = "G"; continue; } else if (line.startsWith('D;TYPE;')) { currentSection = "D"; continue; } else if (line.startsWith('A;TYPE;')) { currentSection = "A"; continue; } else if (line.startsWith('FM;') || line.startsWith('C;')) { currentSection = "OTHER"; continue; }
-            const parts = line.split(';');
-            if (currentSection === "G" && parts.length > 1) { groups[parts[0]] = parts[1]; } else if (currentSection === "D" && parts.length > 9) { depts[parts[0]] = parts[9]; } else if (currentSection === "A" && parts.length > 28) {
-                if (parts[9] === "1" || !parts[19] || parts[19] === "0") continue;
-                let g = (groups[parts[20]] || parts[20] || "DIVERS").replace(/;/g, ' ').trim();
-                articles.push({ group: g, dept: (depts[parts[71]] || parts[71] || g).replace(/;/g, ' ').trim(), desc: parts[19].replace(/;/g, ' ').trim(), price1: Math.round((parseFloat(parts[27].replace(',', '.')) || 0) * 100), price2: parseFloat(parts[28].replace(',', '.')) > 0 ? Math.round(parseFloat(parts[28].replace(',', '.')) * 100) : "" });
-            }
-        }
-        let csvRows = ["#PLU;GROUP;DEPT;DESCRIPTION;LONG_DESCRIPTION;KP_PLU_NOTES;PRICE_1;PRICE_2;PRICE_3;PRICE_4;PRICE_5;PRICE_6;BARCODE;PREFERED;ON_TDE"];
-        for (let art of articles) { csvRows.push(["", art.group, art.dept, art.desc, "", "", art.price1, art.price2, "", "", "", "", "", "", ""].join(';')); }
-        return { csv: csvRows.join('\r\n') + '\r\n', count: articles.length };
-    }
-
-    // TAB 5: REVERSE
-    const dropZoneReverse = document.getElementById('dropZoneReverse');
-    const fileInputReverse = document.getElementById('fileInputReverse');
-    const reverseStatus = document.getElementById('reverseStatus');
-    if(dropZoneReverse && fileInputReverse) {
-        dropZoneReverse.addEventListener('click', () => fileInputReverse.click());
-        dropZoneReverse.addEventListener('dragover', (e) => { e.preventDefault(); dropZoneReverse.classList.add('dragover'); });
-        dropZoneReverse.addEventListener('dragleave', () => dropZoneReverse.classList.remove('dragover'));
-        dropZoneReverse.addEventListener('drop', (e) => { e.preventDefault(); dropZoneReverse.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFileReverse(e.dataTransfer.files[0]); });
-        fileInputReverse.addEventListener('change', (e) => { if (e.target.files.length) handleFileReverse(e.target.files[0]); });
-    }
-
-    function handleFileReverse(file) {
-        if(!reverseStatus) return;
-        reverseStatus.className = 'status'; reverseStatus.textContent = "Extraction en cours...";
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try { const csvData = processJsonToCsv(JSON.parse(e.target.result)); if (csvData.count > 0) { downloadCsv(csvData.csv, "export_popina_extrait.csv"); reverseStatus.className = 'status success'; reverseStatus.textContent = `Extraction réussie ! ${csvData.count} article(s) extrait(s).`; } else { reverseStatus.className = 'status error'; reverseStatus.textContent = "Aucun article trouvé dans ce fichier JSON."; } } 
-            catch (err) { reverseStatus.className = 'status error'; reverseStatus.textContent = "Erreur de lecture du fichier JSON."; }
-        };
-        reader.readAsText(file, 'UTF-8');
-    }
-    function processJsonToCsv(jsonObj) {
-        let products = {}, prices = {}, productCategories = {}, productGroups = {};
-        if (jsonObj.items && Array.isArray(jsonObj.items)) {
-            let taxMap = {}, macroMap = {};
-            if (jsonObj.taxes) jsonObj.taxes.forEach(t => taxMap[t.client_id] = t.percentage ? (t.percentage / 100) : 20);
-            if (jsonObj.macro_categories) jsonObj.macro_categories.forEach(mc => macroMap[mc.client_id] = mc.name);
-            if (jsonObj.cards && jsonObj.cards[0] && jsonObj.cards[0].categories) { jsonObj.cards[0].categories.forEach(cat => { if (cat.positions) { cat.positions.forEach(pos => { if (pos.item && pos.item.client_id) productCategories[pos.item.client_id] = cat.name; }); } }); }
-            jsonObj.items.forEach(item => {
-                let pPrice = "0.00", pTva = "20";
-                if (item.prices && item.prices.length > 0) { pPrice = (item.prices[0].amount / 100).toFixed(2); if (item.prices[0].tax && item.prices[0].tax.client_id) pTva = taxMap[item.prices[0].tax.client_id] || "20"; }
-                products[item.client_id] = item.name; prices[item.client_id] = { amount: pPrice, tvaValue: pTva };
-                if (item.macro_category && item.macro_category.client_id) { productGroups[item.client_id] = macroMap[item.macro_category.client_id] || "DIVERS"; }
-            });
-        }
-        const csvRows = ["Groupe (Macro-catégorie);Sous-catégorie (Famille);Description (Nom article);Prix Sur place (Prix 1);TVA Sur place"]; let count = 0;
-        for (let pId in products) {
-            const name = products[pId]; if (!name || name === "5") continue;
-            const group = productGroups[pId] || "DIVERS"; const category = productCategories[pId] || group; const priceObj = prices[pId] || { amount: "0.00", tvaValue: 20 };
-            csvRows.push(`"${group.replace(/"/g, '""')}";"${category.replace(/"/g, '""')}";"${name.replace(/"/g, '""')}";${priceObj.amount};${priceObj.tvaValue}`); count++;
-        }
-        return { csv: csvRows.join('\r\n') + '\r\n', count: count };
-    }
-
-    function downloadCsv(content, filename, withBom = true) {
-        const parts = withBom ? ['\ufeff', content] : [content];
-        const blob = new Blob(parts, { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a"); const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url); link.setAttribute("download", filename); link.style.visibility = 'hidden';
-        document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-
+/* ============ Utils ============ */
+const $ = id => document.getElementById(id);
+const uuid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() :
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const clean = s => { if(s==null) return ''; let c = String(s).replace(/[\x00-\x1F\x7F-\x9F]/g,'').replace(/\u00A0/g,' ').trim(); return c.length>254 ? c.slice(0,254) : c; };
+const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.').replace(/[^0-9.\-]/g,'')); return isNaN(n) ? NaN : n; };
+const slug = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+
+function toast(msg, type=''){
+  const d = document.createElement('div'); d.className = 't-item '+type; d.textContent = msg;
+  $('toast').appendChild(d); setTimeout(()=>d.remove(), 4200);
+}
+function log(msg, cls=''){
+  const l = $('log'); l.style.display='block';
+  l.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString('fr-FR')}] ${esc(msg)}</div>`;
+  l.scrollTop = l.scrollHeight;
+}
+function download(content, filename, mime, bom=false){
+  const blob = new Blob(bom ? ['\ufeff', content] : [content], {type: mime});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+function decode(buf){
+  try { return new TextDecoder('utf-8',{fatal:true}).decode(buf); }
+  catch(e){ return new TextDecoder('windows-1252').decode(buf); }
+}
+
+/* ============ Établissement ============ */
+const FIELDS = ['name','siret','tva','naf','address','zip','city','phone','gerant'];
+const LS_KEY = 'pos_converter_v5_etab';
+function saveEtab(){ try{ const o={}; FIELDS.forEach(f=>o[f]=$('f_'+f).value); localStorage.setItem(LS_KEY, JSON.stringify(o)); }catch(e){} }
+function loadEtab(){ try{ const o = JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(o) FIELDS.forEach(f=>{ if(o[f]!=null) $('f_'+f).value=o[f]; }); }catch(e){} checkSiret(); }
+function etab(){ const o={}; FIELDS.forEach(f=>o[f]=clean($('f_'+f).value)); if(!o.gerant) o.gerant='0000'; return o; }
+function luhn(d){ let s=0; for(let i=0;i<d.length;i++){ let n=+d[d.length-1-i]; if(i%2){ n*=2; if(n>9) n-=9; } s+=n; } return s%10===0; }
+function checkSiret(){
+  const d = $('f_siret').value.replace(/\D/g,''), t = $('siretTag');
+  if(!d){ t.textContent=''; t.className=''; return; }
+  const okLen = d.length===9 || d.length===14;
+  const ok = okLen && luhn(d);
+  t.className = 'tag ' + (ok?'ok':'bad');
+  t.textContent = ok ? 'valide' : (okLen ? 'clé Luhn invalide' : d.length+' chiffres');
+}
+$('btnTva').onclick = () => {
+  const d = $('f_siret').value.replace(/\D/g,'');
+  if(d.length < 9) return toast('Saisissez au moins 9 chiffres de SIREN/SIRET.','err');
+  const siren = d.slice(0,9), key = (12 + 3*(parseInt(siren,10)%97)) % 97;
+  $('f_tva').value = 'FR' + String(key).padStart(2,'0') + siren; saveEtab();
+};
+FIELDS.forEach(f => $('f_'+f).addEventListener('input', ()=>{ saveEtab(); if(f==='siret') checkSiret(); }));
+$('btnResetEtab').onclick = () => { FIELDS.forEach(f=>$('f_'+f).value = f==='gerant'?'0000':''); saveEtab(); checkSiret(); };
+
+/* ============ Constantes Popina ============ */
+const TAX = { 20:'A58D3A44-34B1-46FC-8481-8101542DA4DE', 10:'59f651fc-4f27-4a0a-98ba-e70d3e218e33', 5.5:'e377eecb-78e8-4d2f-9020-9f790388584a' };
+function taxId(v){ const n = num(v); if(isNaN(n)) return TAX[20]; if(Math.abs(n-20)<.5) return TAX[20]; if(Math.abs(n-10)<.5) return TAX[10]; if(Math.abs(n-5.5)<.5) return TAX[5.5]; return TAX[20]; }
+const tvaOk = v => { const n = num(v); return !isNaN(n) && [5.5,10,20].some(x=>Math.abs(n-x)<.01); };
+const PAY = [
+ ["06AC959D-5A58-45F9-8894-62543F1814C7","Titre restaurant",2,2,true,false,true,true],
+ ["F0CC63FF-2E20-40A4-B1B1-27C02177D63D","Mews",11,9,false,false,false,false],
+ ["F3DD06FF-71CE-4800-92C7-BAFCF6D3A5E7","Espèces",0,0,true,true,true,false],
+ ["9DD1C2C1-A0B5-436B-88DF-A9145227D555","Deliveroo",15,12,false,false,false,false],
+ ["AFEA6F7D-3697-4BE3-BD94-372B046F483A","Carte de crédit",1,1,true,false,false,false],
+ ["0E59B53C-1D23-419D-8ECC-1ED878E82866","Chèque",3,3,true,false,true,false],
+ ["D74176CF-FFD8-428F-BCCB-43A71D820853","Avoir",5,5,true,false,true,true],
+ ["8E54A99A-A9E8-4B15-A400-AE81092CEF8B","Uber eats",13,7,false,false,false,false],
+ ["18652D17-5826-4B84-9E97-673C8B5CD54B","American Express",4,4,true,true,false,false],
+ ["6DDFB5C7-C1B1-43A9-979A-6ADAC3808042","Resto Flash",10,8,false,false,true,false],
+ ["D3158781-53BE-40C4-BFF3-B596A421F34A","Foxorder",9,6,false,true,false,false],
+ ["2528fdb4-7c79-42e9-955d-22310dcc39c7","iZettle",7,11,false,true,false,false],
+ ["B7D76868-5AF6-46E6-BCFD-DD33CA69A739","Compte client",8,10,false,false,false,false],
+ ["B97D0350-92BF-4480-9B08-2ECDBCB11ED8","Cagnotte",14,11,false,false,false,false],
+ ["a11686af-2507-4104-bba8-141f5bfd7682","Virement",20,15,false,true,true,false]
+].map(a=>({client_id:a[0],name:a[1],mode:a[2],index:a[3],enabled:a[4],change:a[5],drawer:a[6],should_print:a[7]}));
+const PRICE_TYPES = [
+ ["E6D99B0E-0145-40DF-941A-FA1C2F1AE554","A emporter",3],["AFD68C4B-66DF-408A-BD10-3966970B355B","Comptoir",2],
+ ["B1F8F670-2753-406B-88E7-5DA7C991A203","Happy Hour",1],["98E1BF35-D34E-400B-9536-C27F7BCA7E92","Prix Spécial",5],
+ ["4C80E382-C753-4C6C-9CFF-B208A055DC12","Prix au poids (Kg)",6],["A0864129-2860-4B51-9CDC-81A208B51368","Terrasse",4],
+ ["5730074E-AEAB-412B-90F8-7655D31168B5","Normal",0]
+].map(a=>({client_id:a[0],name:a[1],price_type:a[2],enabled:true,date_begin:null,date_end:null,price_type_times:[]}));
+
+function baseData(e, now){
+  const room = (id,name,type,pt,idx,ask,newAfter) => ({client_id:id,name,type,price_type:pt,index:idx,enabled:true,date_creation:now,setting_ask_number_guests:ask,setting_close_after_paid:null,setting_payment_method_shortcut:null,setting_new_order_after_paid:newAfter,setting_open_payment_on_printing:null,setting_transmit_on_payment:false,bippers_activated:false,setting_logout_on_transmit:false,number_of_additional_note_prints:0,should_display_owner_on_table:true,setting_logout_on_payment:false,should_send_to_preparation_on_close:true,tables:[]});
+  const place = (id,name) => ({client_id:id,creation_date:now,name,shloud_print_all_items:false,printer_id:null,should_print_unknown_items:false,items:[]});
+  return {
+    name:e.name||'MON COMMERCE', locale:'fr_FR', last_update:now, next_avoir_number:0,
+    ticket_name:e.name, ticket_address:e.address, ticket_text:'Champ libre',
+    ticket_company: e.siret?` ${e.siret} `:'', ticket_phone:e.phone, ticket_zip:e.zip, ticket_city:e.city, ticket_country:'France', ticket_url:'',
+    ticket_naf: e.naf?` ${e.naf} `:'', ticket_tva: e.tva?` ${e.tva} `:'', ticket_footer_note:'Merci de votre visite',
+    ticket_image_url:'https://firebasestorage.googleapis.com:443/v0/b/jalia-prod.appspot.com/o/ticket-13.jpg?alt=media&token=a74ec29d-bda3-4a1e-8fcb-46e6dc2a7138',
+    ticket_company_name:e.name,
+    setting_cut_kitchen_ticket:false,setting_only_first_kitchen_ticket:false,setting_send_preparation_on:true,setting_happy_hour_on:true,
+    setting_detailed_report:true,setting_total_raw:false,setting_not_claim:false,setting_close_after_transmitted:true,setting_send_tills:true,
+    setting_send_tills_live:true,setting_use_qrcode:false,setting_manual_steps_activated:true,setting_print_on_pay:true,number_of_preparation_steps:3,
+    setting_ask_cash_in:false,setting_group_item_kitchen:true,setting_not_claim_content:false,setting_allow_gap_till:true,setting_detailed_menus:false,
+    setting_compact_order:true,setting_print_menu_on_preparation:false,setting_print_option_group_on_preparation:false,
+    number_of_lines:8,number_of_menus:8,number_of_selections:8,exercice_date:now,
+    taxes:[{client_id:TAX[5.5],name:'TVA 5,5',percentage:550},{client_id:TAX[20],name:'TVA 20',percentage:2000},{client_id:TAX[10],name:'TVA 10',percentage:1000}],
+    payment_methods:PAY, price_types:PRICE_TYPES, printers:[],
+    places:[place('5F6F94EC-19FE-44DA-B5AF-8989AC340E44','Cuisine'),place('CBC89272-5DC4-4E60-B2E4-A0650E41822F','Bar')],
+    place_printer_links:[], stock:[],
+    discounts:[{client_id:'7BD93B09-2744-4018-9FDB-95A96F323FE3',amount:10000,name:'Offert',discount_type:1,index:0,date_creation:now,apply_on_units:false}],
+    cash_movement_motifs:[], third_parties:[], bookings:[], customers:[],
+    people:[{client_id:'4AC6F559-74DB-45ED-AAB8-14B9DAAC6851',name:'Gérant',password:e.gerant,pass_key:e.gerant,is_root:true,right_person:true,right_till:true,right_report:true,right_all_orders:true,right_apply_discount:true,right_edit_discount:true,right_delete_order:null,right_cancel_order:true,right_stats_till:true,right_card:true,right_device:true,right_custom_price:true,right_payment_type:true,right_payment_order:true,qrcode:null,key_dallas:null,color_blind_mode_on:false,right_automatic_cash_drawer:true,right_full_stats:true,right_happy_hour:true,right_payed_customer:true,right_client:true,right_manual_cash_drawer:true,right_ownership:true,right_edit_price_type:true,right_transfer_order:true,right_cancel_order_after_note:true,right_edit_justificatif:true,right_update_order_after_note:true}],
+    rooms:[room('014FB172-5E2D-49F2-8CB3-46F8F96EA6A2','Salle 1',0,0,1,true,false), room('D403C194-E0D4-40C4-AEA6-09E751B7F14A','Comptoir',1,2,6,false,true)]
+  };
+}
+
+/* ============ État ============ */
+// row: {groupe, category, name, price, tva, price2 (number|null), tva2 (number|null), listIds:[]}
+// list: {id, name, mandatory, multiple, options:[{name, price}]}
+const state = { rows: [], lists: [], source: '', fileName: '' };
+
+/* ============ Parsers ============ */
+function parseNova(text){
+  const sections = {}, headers = {}; let cur = null;
+  for(let line of text.split(/\r?\n/)){
+    line = line.trim(); if(!line || line.startsWith('!')) continue;
+    const p = line.split(';');
+    if(p.length>1 && !/^\d+$/.test(p[0])){ cur = p[0]; headers[cur] = p; sections[cur] = []; continue; }
+    if(cur && /^\d+$/.test(p[0])) sections[cur].push(p);
+  }
+  const col = (sec, name, fb) => { const i = (headers[sec]||[]).indexOf(name); return i>-1 ? i : fb; };
+  const taxVal = code => {
+    if(code==null || String(code).trim()==='') return 20;
+    const n = num(code); if(isNaN(n)) return 20;
+    if(n===20||n===10||n===5.5) return n;
+    return ({0:10,1:20,2:5.5,3:0})[Math.round(n)] ?? 20;
+  };
+
+  const groups = {}; (sections.G||[]).forEach(p=>groups[p[0]] = clean(p[1]));
+  const depts = {}; { const d=col('D','DESC',9); (sections.D||[]).forEach(p=>depts[p[0]] = clean(p[d])); }
+
+  const mk = (sec, withPrice) => { const out={}; const d=col(sec,'DESC',1), pr=col(sec,'PRICE',2);
+    (sections[sec]||[]).forEach(p=>out[p[0]] = {name:clean(p[d]), price: withPrice ? (num(p[pr])||0) : 0}); return out; };
+  const cItems = mk('C',true), kItems = mk('K',false);
+
+  const lists = {};
+  [['LC',cItems],['LK',kItems]].forEach(([sec,src])=>{
+    const d=col(sec,'DESC',1), it=col(sec,'ITEM',2);
+    (sections[sec]||[]).forEach(p=>{
+      if(!lists[p[0]]) lists[p[0]] = {id:p[0], name:clean(p[d]) || ('Liste '+p[0]), mandatory:true, multiple:false, options:[]};
+      const o = src[p[it]]; if(o && o.name) lists[p[0]].options.push({...o});
+    });
+  });
+
+  const A = sections.A || [];
+  const iD=col('A','DESC',19), iG=col('A','GROUP',20), iDept=col('A','DEPT',71), iP1=col('A','PRICE1',27), iP2=col('A','PRICE2',28), iT1=col('A','TAX1',2), iT2=col('A','TAX2',3);
+  const combo = (headers.A||[]).map((h,i)=>h.startsWith('COMBOLINK')?i:-1).filter(i=>i>-1);
+
+  const rows = [];
+  A.forEach(p=>{
+    const name = clean(p[iD]);
+    if(p[9]==='1' || !name || name==='0' || name.length<2) return;
+    const g = groups[p[iG]] || 'DIVERS';
+    const cat = depts[p[iDept]] || g;
+    const p1 = num(p[iP1])||0, p2 = num(p[iP2])||0;
+    const links = [...new Set(combo.map(i=>p[i]).filter(v=>v && v!=='0'))].filter(id=>lists[id] && lists[id].options.length);
+    rows.push({ groupe:g, category:cat, name, price:p1, tva:taxVal(p[iT1]),
+      price2: p2>0 ? p2 : null, tva2: p2>0 ? taxVal(p[iT2]!=='' && p[iT2]!=null ? p[iT2] : p[iT1]) : null, listIds:links });
+  });
+  return { rows, lists: Object.values(lists).filter(l=>l.options.length) };
+}
+
+function splitCSV(line, d){
+  const out=[]; let cur='', q=false;
+  for(let i=0;i<line.length;i++){ const c=line[i];
+    if(c==='"'){ if(q && line[i+1]==='"'){ cur+='"'; i++; } else q=!q; }
+    else if(c===d && !q){ out.push(cur.trim()); cur=''; } else cur+=c; }
+  out.push(cur.trim()); return out;
+}
+function parsePopinaCSV(text){
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2) throw new Error('CSV vide');
+  const d = (lines[0].match(/;/g)||[]).length >= (lines[0].match(/,/g)||[]).length ? ';' : ',';
+  const H = splitCSV(lines[0], d).map(h=>h.toLowerCase());
+  const f = fn => H.findIndex(fn);
+  let iG = f(h=>h.includes('groupe')||h.includes('macro'));
+  let iC = H.findIndex((h,i)=>i!==iG && (h.includes('famille')||h.includes('categorie')||h.includes('catégorie')||h.includes('sous-cat')));
+  let iN = f(h=>h.includes('description')||h.includes('nom')||h.includes('article'));
+  let iP = f(h=>h.includes('prix sur place')||h.includes('prix 1')||h==='prix'||h.includes('prix_ttc'));
+  let iT = f(h=>h.includes('tva sur place')||h==='tva');
+  let iP2 = f(h=>h.includes('prix emporter')||h.includes('prix 2'));
+  let iT2 = f(h=>h.includes('tva emporter')||h.includes('tva 2'));
+  if(iG===-1 && H.length>=2 && /cat|famille/.test(H[0]) && /cat|famille/.test(H[1])){ iG=0; iC=1; }
+  if(iC===-1) iC = 0;
+  if(iN===-1) iN=2; if(iP===-1) iP=3; if(iT===-1) iT=4;
+  if(iP2===-1 && H.length>5) iP2=5; if(iT2===-1 && H.length>6) iT2=6;
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const c = splitCSV(lines[i], d); const name = clean(c[iN]); if(!name) continue;
+    const p2 = iP2>=0 && c[iP2] ? num(c[iP2]) : NaN;
+    const t = num(c[iT]); const t2 = iT2>=0 && c[iT2] ? num(c[iT2]) : NaN;
+    rows.push({ groupe: iG>=0 ? clean(c[iG])||'Groupe 1' : 'Groupe 1', category: clean(c[iC])||'Général', name,
+      price: num(c[iP])||0, tva: isNaN(t)?20:t,
+      price2: isNaN(p2)?null:p2, tva2: isNaN(p2)?null:(isNaN(t2)?(isNaN(t)?20:t):t2), listIds:[] });
+  }
+  return { rows, lists: [] };
+}
+function parsePopinaJSON(obj){
+  if(!Array.isArray(obj.items)) throw new Error('JSON sans "items"');
+  const tax = {}; (obj.taxes||[]).forEach(t=>tax[t.client_id] = (t.percentage||2000)/100);
+  const macro = {}; (obj.macro_categories||[]).forEach(m=>macro[m.client_id]=m.name);
+  const catOf = {}; ((obj.cards&&obj.cards[0]&&obj.cards[0].categories)||[]).forEach(c=>(c.positions||[]).forEach(p=>{ if(p.item) catOf[p.item.client_id]=c.name; }));
+  const lists = (obj.shared_option_categories||[]).map(s=>({ id:s.client_id, name:s.name, mandatory:!!s.is_mandatory, multiple:!!s.is_multiple,
+    options:(s.options||[]).map(o=>({name:o.name, price:(o.price||0)/100})) }));
+  const rows = obj.items.filter(i=>i.name).map(i=>{
+    const pr = i.prices||[]; const a = pr.find(p=>p.price_type===0) || pr[0]; const b = pr.find(p=>p.price_type===3);
+    const g = macro[i.macro_category&&i.macro_category.client_id] || 'DIVERS';
+    return { groupe:g, category: catOf[i.client_id]||g, name:clean(i.name),
+      price: a ? a.amount/100 : 0, tva: a&&a.tax ? (tax[a.tax.client_id]??20) : 20,
+      price2: b ? b.amount/100 : null, tva2: b ? (b.tax ? (tax[b.tax.client_id]??20) : 20) : null,
+      listIds:(i.shared_option_categories||[]).map(s=>s.client_id) };
+  });
+  const etabFill = {};
+  if(obj.ticket_name) etabFill.name = obj.ticket_name; if(obj.ticket_company) etabFill.siret = obj.ticket_company.trim();
+  if(obj.ticket_tva) etabFill.tva = obj.ticket_tva.trim(); if(obj.ticket_naf) etabFill.naf = obj.ticket_naf.trim();
+  if(obj.ticket_address) etabFill.address = obj.ticket_address; if(obj.ticket_zip) etabFill.zip = obj.ticket_zip;
+  if(obj.ticket_city) etabFill.city = obj.ticket_city; if(obj.ticket_phone) etabFill.phone = obj.ticket_phone;
+  return { rows, lists, etabFill };
+}
+
+/* ============ Import ============ */
+function load(result, source, name){
+  state.rows = result.rows; state.lists = result.lists; state.source = source; state.fileName = name;
+  if(result.etabFill){
+    let n=0; Object.entries(result.etabFill).forEach(([k,v])=>{ const el=$('f_'+k); if(el && !el.value.trim()){ el.value=v; n++; } });
+    if(n){ saveEtab(); checkSiret(); log(`${n} champ(s) établissement préremplis depuis le JSON.`); }
+  }
+  $('srcInfo').textContent = `Source : ${source} — ${name}`;
+  $('btnClear').disabled = false;
+  $('editorCard').style.display = $('exportCard').style.display = 'block';
+  renderAll();
+  log(`${source} : ${state.rows.length} article(s), ${state.lists.length} liste(s).`);
+  toast(`${state.rows.length} articles importés`, 'ok');
+}
+function handleText(text, name){
+  try{
+    const t = text.trim();
+    if(name.toLowerCase().endsWith('.json') || t.startsWith('{')) return load(parsePopinaJSON(JSON.parse(t)), 'JSON Popina', name);
+    if(/^(G;DESC;|A;TYPE;|D;TYPE;)/m.test(t)) return load(parseNova(text), 'Nova', name);
+    load(parsePopinaCSV(text), 'CSV Popina', name);
+  }catch(err){ console.error(err); log('Erreur : '+err.message,'e'); toast('Erreur de lecture : '+err.message,'err'); }
+}
+function handleFile(file){
+  log(`Chargement de ${file.name} (${(file.size/1024).toFixed(1)} Ko)…`);
+  const r = new FileReader(); r.onload = e => handleText(decode(e.target.result), file.name); r.readAsArrayBuffer(file);
+}
+const drop = $('drop'), fileIn = $('file');
+drop.onclick = () => fileIn.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); };
+fileIn.onchange = e => { if(e.target.files.length) handleFile(e.target.files[0]); fileIn.value=''; };
+$('btnSample').onclick = () => handleText(
+`Groupe;Famille;Description;Prix Sur place;TVA Sur place;Prix Emporter;TVA Emporter
+Boissons;Softs;Coca-Cola 33cl;3,50;10;2,50;5,5
+Boissons;Softs;Eau minérale;2,00;10;1,50;5,5
+Boissons;Alcools;Pinte blonde;6,00;20;;
+Plats;Burgers;Cheeseburger;12,90;10;11,90;10
+Plats;Burgers;Burger végé;13,50;10;12,50;10`, 'exemple.csv');
+$('btnClear').onclick = () => {
+  state.rows=[]; state.lists=[]; $('editorCard').style.display=$('exportCard').style.display='none';
+  $('srcInfo').textContent=''; $('btnClear').disabled=true; $('log').innerHTML=''; $('log').style.display='none';
+};
+
+/* ============ Validation / rendu ============ */
+function issues(){
+  const dup = new Map(), res = { zero:0, tva:0, dup:0, empty:0 };
+  state.rows.forEach(r=>{ const k=[r.groupe,r.category,r.name.toLowerCase()].join('|'); dup.set(k,(dup.get(k)||0)+1); });
+  state.rows.forEach(r=>{
+    if(!r.name) res.empty++; if(!(r.price>0)) res.zero++;
+    if(!tvaOk(r.tva) || (r.price2!=null && !tvaOk(r.tva2))) res.tva++;
+    if(dup.get([r.groupe,r.category,r.name.toLowerCase()].join('|'))>1) res.dup++;
+  });
+  return res;
+}
+function renderChips(){
+  const groups = new Set(state.rows.map(r=>r.groupe)), fams = new Set(state.rows.map(r=>r.groupe+'|'+r.category));
+  const i = issues();
+  $('chips').innerHTML =
+    `<div class="chip"><b>${state.rows.length}</b>articles</div>
+     <div class="chip"><b>${groups.size}</b>groupes</div>
+     <div class="chip"><b>${fams.size}</b>familles</div>
+     <div class="chip"><b>${state.lists.length}</b>listes</div>
+     <div class="chip ${i.zero?'w':''}"><b>${i.zero}</b>prix à 0</div>
+     <div class="chip ${i.tva?'w':''}"><b>${i.tva}</b>TVA atypique</div>
+     <div class="chip ${i.dup?'w':''}"><b>${i.dup}</b>doublons</div>
+     <div class="chip ${i.empty?'e':''}"><b>${i.empty}</b>noms vides</div>`;
+}
+function fmt(n){ return n==null||isNaN(n) ? '' : (+n).toFixed(2); }
+function renderRows(){
+  const q = $('q').value.trim().toLowerCase();
+  const dup = new Map(); state.rows.forEach(r=>{ const k=[r.groupe,r.category,r.name.toLowerCase()].join('|'); dup.set(k,(dup.get(k)||0)+1); });
+  const listName = id => (state.lists.find(l=>l.id===id)||{}).name || id;
+  let html='', shown=0;
+  state.rows.forEach((r,i)=>{
+    if(q && !(r.name+' '+r.groupe+' '+r.category).toLowerCase().includes(q)) return;
+    shown++;
+    const isDup = dup.get([r.groupe,r.category,r.name.toLowerCase()].join('|'))>1;
+    const w = c => c ? 'warn' : '';
+    html += `<tr data-i="${i}">
+      <td><input data-f="groupe" list="dlG" value="${esc(r.groupe)}"></td>
+      <td><input data-f="category" list="dlC" value="${esc(r.category)}"></td>
+      <td><input data-f="name" class="${!r.name?'bad':w(isDup)}" value="${esc(r.name)}"></td>
+      <td class="n"><input data-f="price" class="${w(!(r.price>0))}" value="${fmt(r.price)}"></td>
+      <td class="t"><input data-f="tva" class="${w(!tvaOk(r.tva))}" value="${esc(r.tva)}"></td>
+      <td class="n"><input data-f="price2" value="${fmt(r.price2)}"></td>
+      <td class="t"><input data-f="tva2" class="${r.price2!=null && !tvaOk(r.tva2)?'warn':''}" value="${r.tva2==null?'':esc(r.tva2)}"></td>
+      <td title="${esc(r.listIds.map(listName).join(', '))}" style="color:var(--muted);white-space:nowrap">${r.listIds.length?r.listIds.length+' liste(s)':''}</td>
+      <td class="x"><button class="b-danger" data-del="${i}" title="Supprimer">×</button></td></tr>`;
+  });
+  $('tbody').innerHTML = html || `<tr><td colspan="9" class="empty">Aucun article à afficher.</td></tr>`;
+  if(!$('dlG')){ document.body.insertAdjacentHTML('beforeend','<datalist id="dlG"></datalist><datalist id="dlC"></datalist>'); }
+  $('dlG').innerHTML = [...new Set(state.rows.map(r=>r.groupe))].map(v=>`<option value="${esc(v)}">`).join('');
+  $('dlC').innerHTML = [...new Set(state.rows.map(r=>r.category))].map(v=>`<option value="${esc(v)}">`).join('');
+}
+function renderLists(){
+  $('lbody').innerHTML = state.lists.map((l,i)=>{
+    const used = state.rows.filter(r=>r.listIds.includes(l.id)).length;
+    return `<tr data-l="${i}">
+      <td><input data-lf="name" value="${esc(l.name)}"></td>
+      <td style="color:var(--muted)">${l.options.map(o=>esc(o.name)+(o.price?` (+${o.price.toFixed(2)}€)`:'')).join(' · ')}</td>
+      <td class="x"><input type="checkbox" data-lf="mandatory" ${l.mandatory?'checked':''} style="width:auto"></td>
+      <td class="x"><input type="checkbox" data-lf="multiple" ${l.multiple?'checked':''} style="width:auto"></td>
+      <td class="x">${used}</td></tr>`; }).join('') || `<tr><td colspan="5" class="empty">Aucune liste de condiments.</td></tr>`;
+}
+function renderAll(){ renderChips(); renderRows(); renderLists(); }
+
+/* ============ Événements éditeur ============ */
+$('tbody').addEventListener('change', e=>{
+  const inp = e.target; if(!inp.dataset.f) return;
+  const r = state.rows[+inp.closest('tr').dataset.i], f = inp.dataset.f; let v = inp.value.trim();
+  if(f==='groupe'||f==='category'||f==='name') r[f] = clean(v) || (f==='name' ? '' : (f==='groupe'?'Groupe 1':'Général'));
+  else if(f==='price'||f==='tva'){ const n=num(v); r[f] = isNaN(n)||n<0 ? (f==='tva'?20:0) : n; }
+  else if(f==='price2'||f==='tva2'){ const n=num(v); r[f] = (v===''||isNaN(n)||n<0) ? null : n; if(f==='price2' && r.price2!=null && r.tva2==null) r.tva2 = r.tva; if(f==='price2' && r.price2==null) r.tva2=null; }
+  renderAll();
+});
+$('tbody').addEventListener('click', e=>{
+  const b = e.target.closest('[data-del]'); if(!b) return;
+  state.rows.splice(+b.dataset.del,1); renderAll();
+});
+$('lbody').addEventListener('change', e=>{
+  const inp = e.target; if(!inp.dataset.lf) return; const l = state.lists[+inp.closest('tr').dataset.l];
+  l[inp.dataset.lf] = inp.type==='checkbox' ? inp.checked : clean(inp.value) || l.name;
+});
+$('q').addEventListener('input', renderRows);
+$('btnAdd').onclick = () => {
+  const last = state.rows[state.rows.length-1] || {};
+  state.rows.push({groupe:last.groupe||'Groupe 1', category:last.category||'Général', name:'Nouvel article', price:0, tva:20, price2:null, tva2:null, listIds:[]});
+  renderAll(); $('q').value=''; renderRows(); const t=$('tbody').lastElementChild; if(t) t.scrollIntoView({block:'center'});
+};
+$('btnBulkTva').onclick = () => {
+  const v = num($('bulkTva').value); if(isNaN(v)) return toast('Choisissez une TVA.','err');
+  const q = $('q').value.trim().toLowerCase(); let n=0;
+  state.rows.forEach(r=>{ if(q && !(r.name+' '+r.groupe+' '+r.category).toLowerCase().includes(q)) return; r.tva=v; if(r.price2!=null) r.tva2=v; n++; });
+  renderAll(); toast(`TVA ${v} % appliquée à ${n} ligne(s)`, 'ok');
+};
+$('btnDedupe').onclick = () => {
+  const seen = new Map(); const out=[]; let n=0;
+  state.rows.forEach(r=>{ const k=[r.groupe,r.category,r.name.toLowerCase(),r.price,r.price2].join('|'); if(seen.has(k)){ n++; return; } seen.set(k,1); out.push(r); });
+  state.rows = out; renderAll(); toast(n ? `${n} doublon(s) exact(s) supprimé(s)` : 'Aucun doublon exact', n?'ok':'');
+};
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===t.dataset.pane));
+});
+
+/* ============ Exports ============ */
+function buildJSON(){
+  const e = etab(), now = new Date().toISOString();
+  const macroMap = new Map(), catMap = new Map(), famCount = new Map();
+  const listMap = new Map(); // list.id -> new uuid
+  const shared = [];
+  const usedLists = new Set(state.rows.flatMap(r=>r.listIds));
+  state.lists.filter(l=>l.options.length && usedLists.has(l.id)).forEach((l,i)=>{
+    const id = uuid(); listMap.set(l.id,id);
+    shared.push({ client_id:id, index:i, name:l.name, is_mandatory:l.mandatory, is_multiple:l.multiple,
+      options:l.options.map((o,j)=>({client_id:uuid(), index:j, name:o.name, price:Math.round((o.price||0)*100)})) });
+  });
+  const items = [];
+  state.rows.forEach(r=>{
+    if(!r.name) return;
+    if(!macroMap.has(r.groupe)) macroMap.set(r.groupe,{id:uuid(), index:macroMap.size});
+    const m = macroMap.get(r.groupe); if(!famCount.has(m.id)) famCount.set(m.id,0);
+    const ck = r.groupe+'__'+r.category;
+    if(!catMap.has(ck)){ const idx=famCount.get(m.id); famCount.set(m.id,idx+1); catMap.set(ck,{id:uuid(), name:r.category, macroId:m.id, index:idx, positions:[]}); }
+    const c = catMap.get(ck), itemId = uuid();
+    const prices = [{client_id:uuid(), name:null, amount:Math.round(r.price*100), price_type:0, tax:{client_id:taxId(r.tva)}}];
+    if(r.price2!=null) prices.push({client_id:uuid(), name:null, amount:Math.round(r.price2*100), price_type:3, tax:{client_id:taxId(r.tva2!=null?r.tva2:r.tva)}});
+    items.push({ name:r.name, client_id:itemId, modular_price:false, preparation_step_index:-1, screen_name:null, kitchen_name:null, sku:null,
+      date_creation:now, barcode:null, is_weight_price:false, kilo_price:0.0, item_is_limodade:false, option_categories:[], prices,
+      macro_category:{client_id:m.id}, shared_option_categories: r.listIds.filter(id=>listMap.has(id)).map(id=>({client_id:listMap.get(id)})) });
+    c.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:c.positions.length, item:{client_id:itemId}});
+  });
+  const out = baseData(e, now);
+  out.macro_categories = [...macroMap].map(([name,v])=>({client_id:v.id, name, index:v.index, color:0, image:'Fichier 9', preparation_step_index:-1, number_of_categories:8}));
+  out.shared_option_categories = shared;
+  out.items = items;
+  out.cards = [{ client_id:uuid(), name:'Carte Principale', selections:[], menus:[],
+    categories:[...catMap.values()].map(c=>({client_id:c.id, name:c.name, index:c.index, number_of_columns:2, number_of_lines:8, positions:c.positions, macro_category:{client_id:c.macroId}})) }];
+  return { json: JSON.stringify(out,null,2), items: items.length, groups: macroMap.size, lists: shared.length };
+}
+const q2 = s => '"'+String(s).replace(/"/g,'""')+'"';
+function buildCSV(){
+  const L = ['Groupe (Macro-catégorie);Famille;Description (Nom article);Prix Sur place;TVA Sur place;Prix Emporter;TVA Emporter'];
+  state.rows.forEach(r=>L.push([q2(r.groupe),q2(r.category),q2(r.name),fmt(r.price),r.tva,fmt(r.price2),r.price2!=null?(r.tva2??r.tva):''].join(';')));
+  return L.join('\r\n')+'\r\n';
+}
+function buildTDE(){
+  const s = v => String(v).replace(/;/g,' ').trim();
+  const L = ['#PLU;GROUP;DEPT;DESCRIPTION;LONG_DESCRIPTION;KP_PLU_NOTES;PRICE_1;PRICE_2;PRICE_3;PRICE_4;PRICE_5;PRICE_6;BARCODE;PREFERED;ON_TDE'];
+  state.rows.forEach(r=>L.push(['',s(r.groupe),s(r.category),s(r.name),'','',Math.round(r.price*100),r.price2!=null?Math.round(r.price2*100):'','','','','','','',''].join(';')));
+  return L.join('\r\n')+'\r\n';
+}
+function preflight(){
+  if(!state.rows.length){ toast('Rien à exporter.','err'); return false; }
+  const i = issues();
+  if(i.empty){ toast(`${i.empty} article(s) sans nom : corrigez ou supprimez-les.`,'err'); return false; }
+  if(i.tva) log(`${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
+  return true;
+}
+document.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>{
+  if(!preflight()) return;
+  const base = slug(etab().name) || slug(state.fileName.replace(/\.[^.]+$/,'')) || 'carte';
+  const kind = b.dataset.exp;
+  if(kind==='json'){ const r = buildJSON(); download(r.json, base+'_popina.json','application/json'); toast(`JSON : ${r.items} articles, ${r.groups} groupes, ${r.lists} listes`,'ok'); log(`Export JSON : ${r.items} articles, ${r.lists} listes.`); }
+  if(kind==='csv'){ download(buildCSV(), base+'_popina.csv','text/csv;charset=utf-8',true); toast('CSV Popina exporté','ok'); }
+  if(kind==='tde'){ download(buildTDE(), base+'_smartTDE.csv','text/csv;charset=utf-8'); toast('CSV SmartTDE exporté','ok'); }
+});
+
+/* ============ Init ============ */
+loadEtab();
 </script>
 </body>
 </html>
