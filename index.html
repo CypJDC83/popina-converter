@@ -126,6 +126,7 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
   <div class="tabs">
     <button class="tab on" data-pane="pItems">Articles</button>
     <button class="tab" data-pane="pLists">Listes de condiments</button>
+    <button class="tab" data-pane="pPlaces">Pôles de préparation</button>
   </div>
 
   <div class="pane on" id="pItems">
@@ -136,9 +137,15 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
       <select id="bulkTva"><option value="">—</option><option>5.5</option><option>10</option><option>20</option></select>
       <button class="b-sec" id="btnBulkTva">Appliquer aux lignes affichées</button>
       <button class="b-sec" id="btnDedupe">Fusionner doublons</button>
+      <span class="sub">Pôle :</span>
+      <select id="bulkPlace"></select>
+      <button class="b-sec" id="btnPlaceAdd">Affecter</button>
+      <button class="b-sec" id="btnPlaceRemove">Retirer</button>
+      <button class="b-sec" id="btnPlaceSet">Remplacer</button>
+      <span class="sub">(sur les lignes affichées)</span>
     </div>
     <div class="scroll"><table>
-      <thead><tr><th>Groupe</th><th>Famille</th><th>Article</th><th>Prix place €</th><th>TVA %</th><th>Prix empt. €</th><th>TVA %</th><th>Listes</th><th></th></tr></thead>
+      <thead><tr><th>Groupe</th><th>Famille</th><th>Article</th><th>Prix place €</th><th>TVA %</th><th>Prix empt. €</th><th>TVA %</th><th>Pôles de préparation</th><th>Listes</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
     <div class="hint">💡 Cellules orange = à vérifier (prix 0, TVA hors 5,5/10/20, doublon). Rouge = invalide.</div>
@@ -150,6 +157,20 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
       <tbody id="lbody"></tbody>
     </table></div>
     <div class="hint">Les listes proviennent de Nova (LC/LK) ou d'un JSON Popina existant.</div>
+  </div>
+
+  <div class="pane" id="pPlaces">
+    <div class="toolbar">
+      <input id="newPlace" placeholder="Nouveau pôle (ex : Chaud, Froid…)" style="max-width:280px">
+      <button class="b-sec" id="btnAddPlace">+ Ajouter le pôle</button>
+      <button class="b-sec" id="btnQuickPlaces">Ajouter Chaud + Froid</button>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>Nom du pôle</th><th>Articles affectés</th><th></th></tr></thead>
+      <tbody id="pbody"></tbody>
+    </table></div>
+    <div class="hint">💡 Astuce : filtrez par famille dans l'onglet Articles (ex. « Softs »), choisissez un pôle puis « Affecter ».<br>
+    ⚠ Les affectations sont écrites dans <code>places[].items</code> (format <code>{"client_id": "&lt;id article&gt;"}</code>). Les imprimantes se règlent ensuite dans le Back-Office. Testez d'abord avec un petit fichier : le format exact est une hypothèse.</div>
   </div>
 </div>
 
@@ -247,8 +268,18 @@ const PRICE_TYPES = [
  ["5730074E-AEAB-412B-90F8-7655D31168B5","Normal",0]
 ].map(a=>({client_id:a[0],name:a[1],price_type:a[2],enabled:true,date_begin:null,date_end:null,price_type_times:[]}));
 
-function baseData(e, now){
-  const room = (id,name,type,pt,idx,ask,newAfter) => ({client_id:id,name,type,price_type:pt,index:idx,enabled:true,date_creation:now,setting_ask_number_guests:ask,setting_close_after_paid:null,setting_payment_method_shortcut:null,setting_new_order_after_paid:newAfter,setting_open_payment_on_printing:null,setting_transmit_on_payment:false,bippers_activated:false,setting_logout_on_transmit:false,number_of_additional_note_prints:0,should_display_owner_on_table:true,setting_logout_on_payment:false,should_send_to_preparation_on_close:true,tables:[]});
+function baseData(e, now, placesOut){
+  // Salles recopiées à l'identique du fichier vierge Popina (BO 2026-04-01)
+  const T = (id,name,x,y,d) => ({client_id:id,name,shape:0,position_x:x,position_y:y,date_creation:d});
+  const room = (id,name,type,pt,idx,o={}) => ({client_id:id,name,type,price_type:pt,index:idx,enabled:!!o.enabled,date_creation:o.date||'2021-11-03T23:52:45+01:00',
+    setting_ask_number_guests:!!o.ask,setting_close_after_paid:null,setting_payment_method_shortcut:null,setting_new_order_after_paid:!!o.newAfter,setting_open_payment_on_printing:null,
+    setting_transmit_on_payment:false,bippers_activated:false,setting_logout_on_transmit:false,number_of_additional_note_prints:0,
+    should_display_owner_on_table:o.owner!==false,setting_logout_on_payment:!!o.logout,should_send_to_preparation_on_close:o.prep!==false,tables:o.tables||[]});
+  const salle1Tables = [
+    T('58B4F9D3-0EE0-4699-8D50-DB37B6E20B69','6',234,234,'2021-11-04T00:21:38+01:00'),T('C15D1EF4-6B56-47C1-8EFC-B09130757C19','1',126,126,'2021-11-04T00:21:03+01:00'),
+    T('6C0EABB3-6A57-4BD0-AAF2-C228CE575751','7',342,234,'2021-11-04T00:21:40+01:00'),T('B32F0993-1876-4A52-86CB-0A3132DA773D','8',450,234,'2021-11-04T00:21:47+01:00'),
+    T('0860542F-57D4-4383-B525-668977B0F852','3',342,126,'2021-11-04T00:21:22+01:00'),T('BD07212C-E05B-465B-A9D9-76F848125314','2',234,126,'2021-11-04T00:21:20+01:00'),
+    T('402FAD76-6E0C-4805-B7E0-58AB2BBA1F45','4',450,126,'2021-11-04T00:21:35+01:00'),T('F12A952F-74F6-43FD-A555-AAE1520E5FED','5',126,234,'2021-11-04T00:21:36+01:00')];
   const place = (id,name) => ({client_id:id,creation_date:now,name,shloud_print_all_items:false,printer_id:null,should_print_unknown_items:false,items:[]});
   return {
     name:e.name||'MON COMMERCE', locale:'fr_FR', last_update:now, next_avoir_number:0,
@@ -265,19 +296,33 @@ function baseData(e, now){
     number_of_lines:8,number_of_menus:8,number_of_selections:8,exercice_date:now,
     taxes:[{client_id:TAX[5.5],name:'TVA 5,5',percentage:550},{client_id:TAX[20],name:'TVA 20',percentage:2000},{client_id:TAX[10],name:'TVA 10',percentage:1000}],
     payment_methods:PAY, price_types:PRICE_TYPES, printers:[],
-    places:[place('5F6F94EC-19FE-44DA-B5AF-8989AC340E44','Cuisine'),place('CBC89272-5DC4-4E60-B2E4-A0650E41822F','Bar')],
+    places: placesOut || [place('5F6F94EC-19FE-44DA-B5AF-8989AC340E44','Cuisine'),place('CBC89272-5DC4-4E60-B2E4-A0650E41822F','Bar')],
     place_printer_links:[], stock:[],
     discounts:[{client_id:'7BD93B09-2744-4018-9FDB-95A96F323FE3',amount:10000,name:'Offert',discount_type:1,index:0,date_creation:now,apply_on_units:false}],
     cash_movement_motifs:[], third_parties:[], bookings:[], customers:[],
     people:[{client_id:'4AC6F559-74DB-45ED-AAB8-14B9DAAC6851',name:'Gérant',password:e.gerant,pass_key:e.gerant,is_root:true,right_person:true,right_till:true,right_report:true,right_all_orders:true,right_apply_discount:true,right_edit_discount:true,right_delete_order:null,right_cancel_order:true,right_stats_till:true,right_card:true,right_device:true,right_custom_price:true,right_payment_type:true,right_payment_order:true,qrcode:null,key_dallas:null,color_blind_mode_on:false,right_automatic_cash_drawer:true,right_full_stats:true,right_happy_hour:true,right_payed_customer:true,right_client:true,right_manual_cash_drawer:true,right_ownership:true,right_edit_price_type:true,right_transfer_order:true,right_cancel_order_after_note:true,right_edit_justificatif:true,right_update_order_after_note:true}],
-    rooms:[room('014FB172-5E2D-49F2-8CB3-46F8F96EA6A2','Salle 1',0,0,1,true,false), room('D403C194-E0D4-40C4-AEA6-09E751B7F14A','Comptoir',1,2,6,false,true)]
+    rooms:[
+      room('B9465AAF-B7FB-4B16-A664-8FE3AD4BA4B4','A emporter',2,3,7,{enabled:false,newAfter:true}),
+      room('014FB172-5E2D-49F2-8CB3-46F8F96EA6A2','Salle 1',0,0,1,{enabled:true,ask:true,tables:salle1Tables}),
+      room('D403C194-E0D4-40C4-AEA6-09E751B7F14A','Comptoir',1,2,6,{enabled:true,newAfter:true}),
+      room('50A0B7B2-928D-42CF-ACAD-CB0C94F982D3','Salle 4',0,0,4,{enabled:false,logout:true}),
+      room('200A2EE8-276E-48B3-97D0-70E79EC8C124','Salle 2',0,0,2,{enabled:false}),
+      room('C612AC82-C9D5-4751-89AF-AE03A1F12DF6','Salle 3',0,0,3,{enabled:false}),
+      room('af05251b-9a05-4eaa-ba3e-e8ca8b731f78','Livraison',3,0,7,{enabled:false,owner:false,prep:false,date:'2026-04-01T11:41:29+02:00'})
+    ]
   };
 }
 
 /* ============ État ============ */
 // row: {groupe, category, name, price, tva, price2 (number|null), tva2 (number|null), listIds:[]}
 // list: {id, name, mandatory, multiple, options:[{name, price}]}
-const state = { rows: [], lists: [], source: '', fileName: '' };
+const defaultPlaces = () => [
+  {id:'5F6F94EC-19FE-44DA-B5AF-8989AC340E44', name:'Cuisine', extra:{}},
+  {id:'CBC89272-5DC4-4E60-B2E4-A0650E41822F', name:'Bar', extra:{}}
+];
+// place: {id, name, extra:{creation_date, shloud_print_all_items, printer_id, should_print_unknown_items}}
+// row.placeIds : ids des pôles de préparation affectés à l'article
+const state = { rows: [], lists: [], places: defaultPlaces(), source: '', fileName: '' };
 
 /* ============ Parsers ============ */
 function parseNova(text){
@@ -325,7 +370,7 @@ function parseNova(text){
     const p1 = num(p[iP1])||0, p2 = num(p[iP2])||0;
     const links = [...new Set(combo.map(i=>p[i]).filter(v=>v && v!=='0'))].filter(id=>lists[id] && lists[id].options.length);
     rows.push({ groupe:g, category:cat, name, price:p1, tva:taxVal(p[iT1]),
-      price2: p2>0 ? p2 : null, tva2: p2>0 ? taxVal(p[iT2]!=='' && p[iT2]!=null ? p[iT2] : p[iT1]) : null, listIds:links });
+      price2: p2>0 ? p2 : null, tva2: p2>0 ? taxVal(p[iT2]!=='' && p[iT2]!=null ? p[iT2] : p[iT1]) : null, listIds:links, placeIds:[] });
   });
   return { rows, lists: Object.values(lists).filter(l=>l.options.length) };
 }
@@ -361,7 +406,7 @@ function parsePopinaCSV(text){
     const t = num(c[iT]); const t2 = iT2>=0 && c[iT2] ? num(c[iT2]) : NaN;
     rows.push({ groupe: iG>=0 ? clean(c[iG])||'Groupe 1' : 'Groupe 1', category: clean(c[iC])||'Général', name,
       price: num(c[iP])||0, tva: isNaN(t)?20:t,
-      price2: isNaN(p2)?null:p2, tva2: isNaN(p2)?null:(isNaN(t2)?(isNaN(t)?20:t):t2), listIds:[] });
+      price2: isNaN(p2)?null:p2, tva2: isNaN(p2)?null:(isNaN(t2)?(isNaN(t)?20:t):t2), listIds:[], placeIds:[] });
   }
   return { rows, lists: [] };
 }
@@ -372,25 +417,33 @@ function parsePopinaJSON(obj){
   const catOf = {}; ((obj.cards&&obj.cards[0]&&obj.cards[0].categories)||[]).forEach(c=>(c.positions||[]).forEach(p=>{ if(p.item) catOf[p.item.client_id]=c.name; }));
   const lists = (obj.shared_option_categories||[]).map(s=>({ id:s.client_id, name:s.name, mandatory:!!s.is_mandatory, multiple:!!s.is_multiple,
     options:(s.options||[]).map(o=>({name:o.name, price:(o.price||0)/100})) }));
+  const places = (obj.places||[]).map(p=>({id:p.client_id, name:p.name, extra:{creation_date:p.creation_date, shloud_print_all_items:!!p.shloud_print_all_items, printer_id:p.printer_id??null, should_print_unknown_items:!!p.should_print_unknown_items}}));
+  const placeOf = {};
+  (obj.places||[]).forEach(p=>(p.items||[]).forEach(it=>{
+    const id = typeof it==='string' ? it : (it.client_id || (it.item && it.item.client_id));
+    if(id) (placeOf[id] = placeOf[id] || []).push(p.client_id);
+  }));
   const rows = obj.items.filter(i=>i.name).map(i=>{
     const pr = i.prices||[]; const a = pr.find(p=>p.price_type===0) || pr[0]; const b = pr.find(p=>p.price_type===3);
     const g = macro[i.macro_category&&i.macro_category.client_id] || 'DIVERS';
     return { groupe:g, category: catOf[i.client_id]||g, name:clean(i.name),
       price: a ? a.amount/100 : 0, tva: a&&a.tax ? (tax[a.tax.client_id]??20) : 20,
       price2: b ? b.amount/100 : null, tva2: b ? (b.tax ? (tax[b.tax.client_id]??20) : 20) : null,
-      listIds:(i.shared_option_categories||[]).map(s=>s.client_id) };
+      listIds:(i.shared_option_categories||[]).map(s=>s.client_id), placeIds: placeOf[i.client_id] || [] };
   });
   const etabFill = {};
   if(obj.ticket_name) etabFill.name = obj.ticket_name; if(obj.ticket_company) etabFill.siret = obj.ticket_company.trim();
   if(obj.ticket_tva) etabFill.tva = obj.ticket_tva.trim(); if(obj.ticket_naf) etabFill.naf = obj.ticket_naf.trim();
   if(obj.ticket_address) etabFill.address = obj.ticket_address; if(obj.ticket_zip) etabFill.zip = obj.ticket_zip;
   if(obj.ticket_city) etabFill.city = obj.ticket_city; if(obj.ticket_phone) etabFill.phone = obj.ticket_phone;
-  return { rows, lists, etabFill };
+  return { rows, lists, places: places.length ? places : null, etabFill };
 }
 
 /* ============ Import ============ */
 function load(result, source, name){
   state.rows = result.rows; state.lists = result.lists; state.source = source; state.fileName = name;
+  if(result.places) state.places = result.places;
+  else if(!state.places.length) state.places = defaultPlaces();
   if(result.etabFill){
     let n=0; Object.entries(result.etabFill).forEach(([k,v])=>{ const el=$('f_'+k); if(el && !el.value.trim()){ el.value=v; n++; } });
     if(n){ saveEtab(); checkSiret(); log(`${n} champ(s) établissement préremplis depuis le JSON.`); }
@@ -451,6 +504,8 @@ function renderChips(){
      <div class="chip"><b>${groups.size}</b>groupes</div>
      <div class="chip"><b>${fams.size}</b>familles</div>
      <div class="chip"><b>${state.lists.length}</b>listes</div>
+     <div class="chip"><b>${state.places.length}</b>pôles</div>
+     <div class="chip ${state.places.length && state.rows.some(r=>!(r.placeIds||[]).length)?'w':''}"><b>${state.rows.filter(r=>!(r.placeIds||[]).length).length}</b>sans pôle</div>
      <div class="chip ${i.zero?'w':''}"><b>${i.zero}</b>prix à 0</div>
      <div class="chip ${i.tva?'w':''}"><b>${i.tva}</b>TVA atypique</div>
      <div class="chip ${i.dup?'w':''}"><b>${i.dup}</b>doublons</div>
@@ -475,10 +530,11 @@ function renderRows(){
       <td class="t"><input data-f="tva" class="${w(!tvaOk(r.tva))}" value="${esc(r.tva)}"></td>
       <td class="n"><input data-f="price2" value="${fmt(r.price2)}"></td>
       <td class="t"><input data-f="tva2" class="${r.price2!=null && !tvaOk(r.tva2)?'warn':''}" value="${r.tva2==null?'':esc(r.tva2)}"></td>
+      <td style="white-space:nowrap;font-size:.7rem">${state.places.map(p=>`<label style="margin-right:.55rem;cursor:pointer"><input type="checkbox" data-p="${esc(p.id)}" style="width:auto;vertical-align:middle" ${(r.placeIds||[]).includes(p.id)?'checked':''}> ${esc(p.name)}</label>`).join('') || '<span style="color:var(--muted)">aucun pôle</span>'}</td>
       <td title="${esc(r.listIds.map(listName).join(', '))}" style="color:var(--muted);white-space:nowrap">${r.listIds.length?r.listIds.length+' liste(s)':''}</td>
       <td class="x"><button class="b-danger" data-del="${i}" title="Supprimer">×</button></td></tr>`;
   });
-  $('tbody').innerHTML = html || `<tr><td colspan="9" class="empty">Aucun article à afficher.</td></tr>`;
+  $('tbody').innerHTML = html || `<tr><td colspan="10" class="empty">Aucun article à afficher.</td></tr>`;
   if(!$('dlG')){ document.body.insertAdjacentHTML('beforeend','<datalist id="dlG"></datalist><datalist id="dlC"></datalist>'); }
   $('dlG').innerHTML = [...new Set(state.rows.map(r=>r.groupe))].map(v=>`<option value="${esc(v)}">`).join('');
   $('dlC').innerHTML = [...new Set(state.rows.map(r=>r.category))].map(v=>`<option value="${esc(v)}">`).join('');
@@ -493,11 +549,28 @@ function renderLists(){
       <td class="x"><input type="checkbox" data-lf="multiple" ${l.multiple?'checked':''} style="width:auto"></td>
       <td class="x">${used}</td></tr>`; }).join('') || `<tr><td colspan="5" class="empty">Aucune liste de condiments.</td></tr>`;
 }
-function renderAll(){ renderChips(); renderRows(); renderLists(); }
+function renderPlaces(){
+  $('pbody').innerHTML = state.places.map((p,i)=>{
+    const n = state.rows.filter(r=>(r.placeIds||[]).includes(p.id)).length;
+    return `<tr data-pl="${i}"><td><input data-pf="name" value="${esc(p.name)}"></td><td class="x">${n}</td>
+      <td class="x"><button class="b-danger" data-pdel="${i}" title="Supprimer le pôle">×</button></td></tr>`;
+  }).join('') || `<tr><td colspan="3" class="empty">Aucun pôle. Ajoutez-en un ci-dessus.</td></tr>`;
+  const sel = $('bulkPlace'), prev = sel.value;
+  sel.innerHTML = state.places.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
+  if(state.places.some(p=>p.id===prev)) sel.value = prev;
+}
+function renderAll(){ renderChips(); renderRows(); renderLists(); renderPlaces(); }
 
 /* ============ Événements éditeur ============ */
 $('tbody').addEventListener('change', e=>{
-  const inp = e.target; if(!inp.dataset.f) return;
+  const inp = e.target;
+  if(inp.dataset.p){
+    const r = state.rows[+inp.closest('tr').dataset.i]; r.placeIds = r.placeIds || [];
+    if(inp.checked){ if(!r.placeIds.includes(inp.dataset.p)) r.placeIds.push(inp.dataset.p); }
+    else r.placeIds = r.placeIds.filter(x=>x!==inp.dataset.p);
+    return renderChips();
+  }
+  if(!inp.dataset.f) return;
   const r = state.rows[+inp.closest('tr').dataset.i], f = inp.dataset.f; let v = inp.value.trim();
   if(f==='groupe'||f==='category'||f==='name') r[f] = clean(v) || (f==='name' ? '' : (f==='groupe'?'Groupe 1':'Général'));
   else if(f==='price'||f==='tva'){ const n=num(v); r[f] = isNaN(n)||n<0 ? (f==='tva'?20:0) : n; }
@@ -515,7 +588,7 @@ $('lbody').addEventListener('change', e=>{
 $('q').addEventListener('input', renderRows);
 $('btnAdd').onclick = () => {
   const last = state.rows[state.rows.length-1] || {};
-  state.rows.push({groupe:last.groupe||'Groupe 1', category:last.category||'Général', name:'Nouvel article', price:0, tva:20, price2:null, tva2:null, listIds:[]});
+  state.rows.push({groupe:last.groupe||'Groupe 1', category:last.category||'Général', name:'Nouvel article', price:0, tva:20, price2:null, tva2:null, listIds:[], placeIds:[]});
   renderAll(); $('q').value=''; renderRows(); const t=$('tbody').lastElementChild; if(t) t.scrollIntoView({block:'center'});
 };
 $('btnBulkTva').onclick = () => {
@@ -534,6 +607,45 @@ document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('on',p.id===t.dataset.pane));
 });
 
+/* ============ Pôles de préparation ============ */
+const filteredRows = () => { const q = $('q').value.trim().toLowerCase();
+  return state.rows.filter(r => !q || (r.name+' '+r.groupe+' '+r.category).toLowerCase().includes(q)); };
+function addPlace(name){
+  name = clean(name); if(!name) return false;
+  if(state.places.some(p=>p.name.toLowerCase()===name.toLowerCase())){ toast(`Le pôle « ${name} » existe déjà.`,'err'); return false; }
+  state.places.push({id:uuid(), name, extra:{}}); return true;
+}
+$('btnAddPlace').onclick = () => { if(addPlace($('newPlace').value)){ $('newPlace').value=''; renderAll(); } };
+$('newPlace').addEventListener('keydown', e=>{ if(e.key==='Enter') $('btnAddPlace').click(); });
+$('btnQuickPlaces').onclick = () => { const a=addPlace('Chaud'), b=addPlace('Froid'); if(a||b) renderAll(); };
+$('pbody').addEventListener('change', e=>{
+  const inp = e.target; if(inp.dataset.pf!=='name') return;
+  const p = state.places[+inp.closest('tr').dataset.pl]; p.name = clean(inp.value) || p.name; renderAll();
+});
+$('pbody').addEventListener('click', e=>{
+  const b = e.target.closest('[data-pdel]'); if(!b) return;
+  const p = state.places[+b.dataset.pdel];
+  if(!confirm(`Supprimer le pôle « ${p.name} » ?`)) return;
+  state.rows.forEach(r=>{ r.placeIds = (r.placeIds||[]).filter(x=>x!==p.id); });
+  state.places.splice(+b.dataset.pdel,1); renderAll();
+});
+function bulkPlace(mode){
+  const id = $('bulkPlace').value; if(!id) return toast("Créez d'abord un pôle.",'err');
+  const rows = filteredRows(); if(!rows.length) return toast('Aucune ligne affichée.','err');
+  rows.forEach(r=>{
+    r.placeIds = r.placeIds || [];
+    if(mode==='add'){ if(!r.placeIds.includes(id)) r.placeIds.push(id); }
+    else if(mode==='remove'){ r.placeIds = r.placeIds.filter(x=>x!==id); }
+    else r.placeIds = [id];
+  });
+  renderAll();
+  const nm = (state.places.find(p=>p.id===id)||{}).name;
+  toast(`${({add:'Affecté à',remove:'Retiré de',set:'Remplacé par'})[mode]} « ${nm} » : ${rows.length} ligne(s)`, 'ok');
+}
+$('btnPlaceAdd').onclick = () => bulkPlace('add');
+$('btnPlaceRemove').onclick = () => bulkPlace('remove');
+$('btnPlaceSet').onclick = () => bulkPlace('set');
+
 /* ============ Exports ============ */
 function buildJSON(){
   const e = etab(), now = new Date().toISOString();
@@ -546,7 +658,7 @@ function buildJSON(){
     shared.push({ client_id:id, index:i, name:l.name, is_mandatory:l.mandatory, is_multiple:l.multiple,
       options:l.options.map((o,j)=>({client_id:uuid(), index:j, name:o.name, price:Math.round((o.price||0)*100)})) });
   });
-  const items = [];
+  const items = []; const placeItems = {};
   state.rows.forEach(r=>{
     if(!r.name) return;
     if(!macroMap.has(r.groupe)) macroMap.set(r.groupe,{id:uuid(), index:macroMap.size});
@@ -560,8 +672,12 @@ function buildJSON(){
       date_creation:now, barcode:null, is_weight_price:false, kilo_price:0.0, item_is_limodade:false, option_categories:[], prices,
       macro_category:{client_id:m.id}, shared_option_categories: r.listIds.filter(id=>listMap.has(id)).map(id=>({client_id:listMap.get(id)})) });
     c.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:c.positions.length, item:{client_id:itemId}});
+    (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push({client_id:itemId}); });
   });
-  const out = baseData(e, now);
+  const placesOut = state.places.map(p=>({ client_id:p.id, creation_date:(p.extra&&p.extra.creation_date)||now, name:p.name,
+    shloud_print_all_items:!!(p.extra&&p.extra.shloud_print_all_items), printer_id:(p.extra&&p.extra.printer_id)||null,
+    should_print_unknown_items:!!(p.extra&&p.extra.should_print_unknown_items), items: placeItems[p.id]||[] }));
+  const out = baseData(e, now, placesOut);
   out.macro_categories = [...macroMap].map(([name,v])=>({client_id:v.id, name, index:v.index, color:0, image:'Fichier 9', preparation_step_index:-1, number_of_categories:8}));
   out.shared_option_categories = shared;
   out.items = items;
@@ -585,6 +701,8 @@ function preflight(){
   if(!state.rows.length){ toast('Rien à exporter.','err'); return false; }
   const i = issues();
   if(i.empty){ toast(`${i.empty} article(s) sans nom : corrigez ou supprimez-les.`,'err'); return false; }
+  const nop = state.rows.filter(r=>!(r.placeIds||[]).length).length;
+  if(state.places.length && nop) log(`${nop} article(s) sans pôle de préparation (non envoyés en cuisine/bar).`,'w');
   if(i.tva) log(`${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
   return true;
 }
