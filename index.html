@@ -170,7 +170,7 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
       <tbody id="pbody"></tbody>
     </table></div>
     <div class="hint">💡 Astuce : filtrez par famille dans l'onglet Articles (ex. « Softs »), choisissez un pôle puis « Affecter ».<br>
-    ⚠ Les affectations sont écrites dans <code>places[].items</code> (format <code>{"client_id": "&lt;id article&gt;"}</code>). Les imprimantes se règlent ensuite dans le Back-Office. Testez d'abord avec un petit fichier : le format exact est une hypothèse.</div>
+    ⚠ Les affectations sont écrites dans <code>places[].items</code> (liste d'identifiants d'articles, au format texte). Les imprimantes se règlent ensuite dans le Back-Office.</div>
   </div>
 </div>
 
@@ -672,7 +672,7 @@ function buildJSON(){
       date_creation:now, barcode:null, is_weight_price:false, kilo_price:0.0, item_is_limodade:false, option_categories:[], prices,
       macro_category:{client_id:m.id}, shared_option_categories: r.listIds.filter(id=>listMap.has(id)).map(id=>({client_id:listMap.get(id)})) });
     c.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:c.positions.length, item:{client_id:itemId}});
-    (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push({client_id:itemId}); });
+    (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push(itemId); });
   });
   const placesOut = state.places.map(p=>({ client_id:p.id, creation_date:(p.extra&&p.extra.creation_date)||now, name:p.name,
     shloud_print_all_items:!!(p.extra&&p.extra.shloud_print_all_items), printer_id:(p.extra&&p.extra.printer_id)||null,
