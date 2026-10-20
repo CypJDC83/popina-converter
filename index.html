@@ -189,6 +189,17 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
 
 <script>
 /* ============ Utils ============ */
+function calculateGrid(count) {
+  if (count <= 0) return { rows: 2, cols: 2 };
+  if (count <= 4) return { rows: 2, cols: 2 };
+  if (count <= 9) return { rows: 3, cols: 3 };
+  if (count <= 16) return { rows: 4, cols: 4 };
+  if (count <= 25) return { rows: 5, cols: 5 };
+  const cols = Math.min(8, Math.ceil(Math.sqrt(count)));
+  const rows = Math.ceil(count / cols);
+  return { rows, cols };
+}
+
 const $ = id => document.getElementById(id);
 const uuid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() :
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
@@ -416,7 +427,6 @@ function parsePopinaJSON(obj){
     options:(s.options||[]).map(o=>({name:o.name, price:(o.price||0)/100})) }));
   const places = (obj.places||[]).map(p=>({id:p.client_id, name:p.name, extra:{creation_date:p.creation_date, shloud_print_all_items:!!p.shloud_print_all_items, printer_id:p.printer_id??null, should_print_unknown_items:!!p.should_print_unknown_items}}));
   
-  // Extraction sécurisée des identifiants (objets ou strings)
   const placeOf = {};
   (obj.places||[]).forEach(p=>(p.items||[]).forEach(it=>{
     let id = null;
@@ -678,7 +688,6 @@ function buildJSON(){
     (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push(itemId); });
   });
 
-  // Construction des places avec des UUIDs sous forme de chaînes simples
   const placesOut = state.places.map(p=>({ 
     client_id:p.id, 
     creation_date:(p.extra&&p.extra.creation_date)||now, 
@@ -694,7 +703,16 @@ function buildJSON(){
   out.shared_option_categories = shared;
   out.items = items;
   out.cards = [{ client_id:uuid(), name:'Carte Principale', selections:[], menus:[],
-    categories:[...catMap.values()].map(c=>({client_id:c.id, name:c.name, index:c.index, number_of_columns:2, number_of_lines:8, positions:c.positions, macro_category:{client_id:c.macroId}})) }];
+    categories:[...catMap.values()].map(c=>{
+      const grid = calculateGrid(c.positions.length);
+      return {
+        client_id:c.id, name:c.name, index:c.index, 
+        number_of_columns: grid.cols, 
+        number_of_lines: grid.rows, 
+        positions:c.positions, 
+        macro_category:{client_id:c.macroId}
+      };
+    }) }];
   return { json: JSON.stringify(out,null,2), items: items.length, groups: macroMap.size, lists: shared.length };
 }
 
