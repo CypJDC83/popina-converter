@@ -224,7 +224,7 @@ function loadEtab(){ try{ const o = JSON.parse(localStorage.getItem(LS_KEY)||'nu
 function etab(){ const o={}; FIELDS.forEach(f=>o[f]=clean($('f_'+f).value)); if(!o.gerant) o.gerant='0000'; return o; }
 function luhn(d){ let s=0; for(let i=0;i<d.length;i++){ let n=+d[d.length-1-i]; if(i%2){ n*=2; if(n>9) n-=9; } s+=n; } return s%10===0; }
 function checkSiret(){
-  const d = $('f_siret').value.replace(/\D/g,''), t = $('siretTag');
+  const d = $('f_siret').value.replace(/\D/g,''), t =$('siretTag');
   if(!d){ t.textContent=''; t.className=''; return; }
   const okLen = d.length===9 || d.length===14;
   const ok = okLen && luhn(d);
@@ -269,7 +269,6 @@ const PRICE_TYPES = [
 ].map(a=>({client_id:a[0],name:a[1],price_type:a[2],enabled:true,date_begin:null,date_end:null,price_type_times:[]}));
 
 function baseData(e, now, placesOut){
-  // Salles recopiées à l'identique du fichier vierge Popina (BO 2026-04-01)
   const T = (id,name,x,y,d) => ({client_id:id,name,shape:0,position_x:x,position_y:y,date_creation:d});
   const room = (id,name,type,pt,idx,o={}) => ({client_id:id,name,type,price_type:pt,index:idx,enabled:!!o.enabled,date_creation:o.date||'2021-11-03T23:52:45+01:00',
     setting_ask_number_guests:!!o.ask,setting_close_after_paid:null,setting_payment_method_shortcut:null,setting_new_order_after_paid:!!o.newAfter,setting_open_payment_on_printing:null,
@@ -314,14 +313,10 @@ function baseData(e, now, placesOut){
 }
 
 /* ============ État ============ */
-// row: {groupe, category, name, price, tva, price2 (number|null), tva2 (number|null), listIds:[]}
-// list: {id, name, mandatory, multiple, options:[{name, price}]}
 const defaultPlaces = () => [
   {id:'5F6F94EC-19FE-44DA-B5AF-8989AC340E44', name:'Cuisine', extra:{}},
   {id:'CBC89272-5DC4-4E60-B2E4-A0650E41822F', name:'Bar', extra:{}}
 ];
-// place: {id, name, extra:{creation_date, shloud_print_all_items, printer_id, should_print_unknown_items}}
-// row.placeIds : ids des pôles de préparation affectés à l'article
 const state = { rows: [], lists: [], places: defaultPlaces(), source: '', fileName: '' };
 
 /* ============ Parsers ============ */
@@ -410,6 +405,8 @@ function parsePopinaCSV(text){
   }
   return { rows, lists: [] };
 }
+
+/* ============ CORRECTION MAJEURE PARSER JSON ============ */
 function parsePopinaJSON(obj){
   if(!Array.isArray(obj.items)) throw new Error('JSON sans "items"');
   const tax = {}; (obj.taxes||[]).forEach(t=>tax[t.client_id] = (t.percentage||2000)/100);
@@ -418,11 +415,17 @@ function parsePopinaJSON(obj){
   const lists = (obj.shared_option_categories||[]).map(s=>({ id:s.client_id, name:s.name, mandatory:!!s.is_mandatory, multiple:!!s.is_multiple,
     options:(s.options||[]).map(o=>({name:o.name, price:(o.price||0)/100})) }));
   const places = (obj.places||[]).map(p=>({id:p.client_id, name:p.name, extra:{creation_date:p.creation_date, shloud_print_all_items:!!p.shloud_print_all_items, printer_id:p.printer_id??null, should_print_unknown_items:!!p.should_print_unknown_items}}));
+  
+  // Extraction sécurisée des identifiants (objets ou strings)
   const placeOf = {};
   (obj.places||[]).forEach(p=>(p.items||[]).forEach(it=>{
-    const id = typeof it==='string' ? it : (it.client_id || (it.item && it.item.client_id));
+    let id = null;
+    if (typeof it === 'string') id = it;
+    else if (typeof it === 'object' && it !== null) id = it.client_id || (it.item && it.item.client_id);
+    
     if(id) (placeOf[id] = placeOf[id] || []).push(p.client_id);
   }));
+
   const rows = obj.items.filter(i=>i.name).map(i=>{
     const pr = i.prices||[]; const a = pr.find(p=>p.price_type===0) || pr[0]; const b = pr.find(p=>p.price_type===3);
     const g = macro[i.macro_category&&i.macro_category.client_id] || 'DIVERS';
@@ -650,7 +653,7 @@ $('btnPlaceSet').onclick = () => bulkPlace('set');
 function buildJSON(){
   const e = etab(), now = new Date().toISOString();
   const macroMap = new Map(), catMap = new Map(), famCount = new Map();
-  const listMap = new Map(); // list.id -> new uuid
+  const listMap = new Map();
   const shared = [];
   const usedLists = new Set(state.rows.flatMap(r=>r.listIds));
   state.lists.filter(l=>l.options.length && usedLists.has(l.id)).forEach((l,i)=>{
@@ -674,9 +677,18 @@ function buildJSON(){
     c.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:c.positions.length, item:{client_id:itemId}});
     (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push(itemId); });
   });
-  const placesOut = state.places.map(p=>({ client_id:p.id, creation_date:(p.extra&&p.extra.creation_date)||now, name:p.name,
-    shloud_print_all_items:!!(p.extra&&p.extra.shloud_print_all_items), printer_id:(p.extra&&p.extra.printer_id)||null,
-    should_print_unknown_items:!!(p.extra&&p.extra.should_print_unknown_items), items: placeItems[p.id]||[] }));
+
+  // Construction des places avec des UUIDs sous forme de chaînes simples
+  const placesOut = state.places.map(p=>({ 
+    client_id:p.id, 
+    creation_date:(p.extra&&p.extra.creation_date)||now, 
+    name:p.name,
+    shloud_print_all_items:!!(p.extra&&p.extra.shloud_print_all_items), 
+    printer_id:(p.extra&&p.extra.printer_id)||null,
+    should_print_unknown_items:!!(p.extra&&p.extra.should_print_unknown_items), 
+    items: placeItems[p.id] || [] 
+  }));
+
   const out = baseData(e, now, placesOut);
   out.macro_categories = [...macroMap].map(([name,v])=>({client_id:v.id, name, index:v.index, color:0, image:'Fichier 9', preparation_step_index:-1, number_of_categories:8}));
   out.shared_option_categories = shared;
@@ -685,6 +697,7 @@ function buildJSON(){
     categories:[...catMap.values()].map(c=>({client_id:c.id, name:c.name, index:c.index, number_of_columns:2, number_of_lines:8, positions:c.positions, macro_category:{client_id:c.macroId}})) }];
   return { json: JSON.stringify(out,null,2), items: items.length, groups: macroMap.size, lists: shared.length };
 }
+
 const q2 = s => '"'+String(s).replace(/"/g,'""')+'"';
 function buildCSV(){
   const L = ['Groupe (Macro-catégorie);Famille;Description (Nom article);Prix Sur place;TVA Sur place;Prix Emporter;TVA Emporter'];
