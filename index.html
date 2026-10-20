@@ -189,21 +189,10 @@ td.n{width:78px}td.t{width:64px}td.x{width:36px;text-align:center}
 
 <script>
 /* ============ Utils ============ */
-function calculateGrid(count) {
-  const n = Math.max(0, parseInt(count, 10) || 0);
-  if (n <= 4) return { rows: 2, cols: 2 };
-  if (n <= 9) return { rows: 3, cols: 3 };
-  if (n <= 16) return { rows: 4, cols: 4 };
-  if (n <= 25) return { rows: 5, cols: 5 };
-  const cols = Math.min(8, Math.ceil(Math.sqrt(n)));
-  const rows = Math.ceil(n / cols);
-  return { rows: parseInt(rows, 10), cols: parseInt(cols, 10) };
-}
-
 const $ = id => document.getElementById(id);
 const uuid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() :
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
-const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const clean = s => { if(s==null) return ''; let c = String(s).replace(/[\x00-\x1F\x7F-\x9F]/g,'').replace(/\u00A0/g,' ').trim(); return c.length>254 ? c.slice(0,254) : c; };
 const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.').replace(/[^0-9.\-]/g,'')); return isNaN(n) ? NaN : n; };
 const slug = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
@@ -703,16 +692,13 @@ function buildJSON(){
   out.shared_option_categories = shared;
   out.items = items;
   out.cards = [{ client_id:uuid(), name:'Carte Principale', selections:[], menus:[],
-    categories:[...catMap.values()].map(c=>{
-      const grid = calculateGrid(c.positions.length);
-      return {
-        client_id:c.id, name:c.name, index:c.index, 
-        number_of_columns: grid.cols, 
-        number_of_lines: grid.rows, 
-        positions:c.positions, 
-        macro_category:{client_id:c.macroId}
-      };
-    }) }];
+    categories:[...catMap.values()].map(c=>({
+      client_id:c.id, name:c.name, index:c.index, 
+      number_of_columns: 2, 
+      number_of_lines: 8, 
+      positions:c.positions, 
+      macro_category:{client_id:c.macroId}
+    })) }];
   return { json: JSON.stringify(out,null,2), items: items.length, groups: macroMap.size, lists: shared.length };
 }
 
