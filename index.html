@@ -889,6 +889,8 @@ function buildJSON(){
   }));
 
   const out = baseData(e, now, placesOut);
+  // Nombre de cases de groupes (catégories) dans Popina : assez pour tous les groupes (8 par défaut)
+  out.number_of_lines = Math.max(8, macroMap.size);
   out.macro_categories = [...macroMap].map(([name,v])=>({client_id:v.id, name, index:v.index, color:0, image:'Fichier 9', preparation_step_index:-1, number_of_categories:Math.max(8, famCount.get(v.id)||0)}));
   out.shared_option_categories = shared;
   out.items = items;
