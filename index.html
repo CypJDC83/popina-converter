@@ -204,7 +204,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   <div class="exports">
     <div class="exp"><h4>📦 JSON Back-Office Popina</h4><p>Carte complète + listes + paramètres de l'établissement. La grille de chaque famille est agrandie pour afficher tous ses articles.</p>
       <div class="row" style="margin-bottom:.6rem"><label for="gridCols" class="sub" style="white-space:nowrap">Colonnes par famille</label>
-        <select id="gridCols"><option value="auto">Auto (2 à 6)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option></select></div><button class="b-primary" data-exp="json">Télécharger .json</button></div>
+        <select id="gridCols"><option value="auto">Auto (2 à 4)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div><button class="b-primary" data-exp="json">Télécharger .json</button></div>
     <div class="exp"><h4>📄 CSV Popina (tableur)</h4><p>Pour retravailler sous Excel (UTF-8 BOM, séparateur ;).</p><button class="b-primary" data-exp="csv">Télécharger .csv</button></div>
     <div class="exp"><h4>🧾 CSV SmartTDE</h4><p>Prix en centimes, sans TVA.</p><button class="b-primary" data-exp="tde">Télécharger .csv</button></div>
   </div>
@@ -841,10 +841,10 @@ $('btnPlaceSet').onclick = () => bulkPlace('set');
 
 /* ============ Exports ============ */
 // Taille de la grille d'une famille dans Popina : assez de cases pour que tous les articles soient visibles
-// (48 articles max par famille → en auto, 8 lignes et 2 à 6 colonnes suffisent toujours)
+// Popina refuse plus de 4 colonnes (« Failed to parse subCategory ») → 4 col. × 12 lignes = 48 articles max
 function gridFor(n){
   const pref = $('gridCols').value;
-  const cols = pref==='auto' ? Math.min(6, Math.max(2, Math.ceil(n/8))) : +pref;
+  const cols = pref==='auto' ? Math.min(4, Math.max(2, Math.ceil(n/8))) : Math.min(4, +pref);
   return { cols, lines: Math.max(8, Math.ceil(n/cols)) };
 }
 function buildJSON(){
