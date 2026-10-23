@@ -355,15 +355,20 @@ function parseNova(text){
     if(cur && /^\d+$/.test(p[0])) sections[cur].push(p);
   }
   const col = (sec, name, fb) => { const i = (headers[sec]||[]).indexOf(name); return i>-1 ? i : fb; };
+  const taxTable = {}; { const pc=col('TAX','PERC',1); (sections.TAX||[]).forEach(p=>{ const v=num(p[pc]); if(!isNaN(v)) taxTable[(+p[0])-1] = v; }); }
   const taxVal = code => {
     if(code==null || String(code).trim()==='') return 20;
     const n = num(code); if(isNaN(n)) return 20;
     if(n===20||n===10||n===5.5) return n;
+    const t = taxTable[Math.round(n)]; if(t!=null && t>0) return t; // table TAX du fichier (code 0 = 1re ligne)
     return ({0:10,1:20,2:5.5,3:0})[Math.round(n)] ?? 20;
   };
 
   const groups = {}; (sections.G||[]).forEach(p=>groups[p[0]] = clean(p[1]));
-  const depts = {}; { const d=col('D','DESC',9); (sections.D||[]).forEach(p=>depts[p[0]] = clean(p[d])); }
+  // familles : indexées par n° de ligne ET par DEPTID (selon la version de Nova)
+  const depts = {}; { const d=col('D','DESC',9), di=col('D','DEPTID',-1); (sections.D||[]).forEach(p=>{ const n=clean(p[d]); depts[p[0]] = n; if(di>-1 && p[di]) depts[p[di]] = n; }); }
+  // Certains exports Nova donnent l'identifiant (ex. 3), d'autres directement le nom (ex. BOISSONS CHAUDES)
+  const resolve = (map, v) => { v = clean(v); if(!v || v==='0') return ''; return map[v] || (/^\d+$/.test(v) ? '' : v); };
 
   const mk = (sec, withPrice) => { const out={}; const d=col(sec,'DESC',1), pr=col(sec,'PRICE',2);
     (sections[sec]||[]).forEach(p=>out[p[0]] = {name:clean(p[d]), price: withPrice ? (num(p[pr])||0) : 0}); return out; };
@@ -386,8 +391,8 @@ function parseNova(text){
   A.forEach(p=>{
     const name = clean(p[iD]);
     if(p[9]==='1' || !name || name==='0' || name.length<2) return;
-    const g = groups[p[iG]] || 'DIVERS';
-    const cat = depts[p[iDept]] || g;
+    const g = resolve(groups, p[iG]) || 'DIVERS';
+    const cat = resolve(depts, p[iDept]) || g;
     const p1 = num(p[iP1])||0, p2 = num(p[iP2])||0;
     const links = [...new Set(combo.map(i=>p[i]).filter(v=>v && v!=='0'))].filter(id=>lists[id] && lists[id].options.length);
     rows.push({ groupe:g, category:cat, name, price:p1, tva:taxVal(p[iT1]),
