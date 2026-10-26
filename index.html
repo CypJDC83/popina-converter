@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.1 – Field Tech by cyp</title>
+<title>POS Converter v5.2 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -81,6 +81,13 @@ details.card>summary{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .resume{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.7rem;padding:.6rem .8rem;border:1px solid var(--accent);border-radius:8px;background:#0ea5e914;font-size:.78rem}
 .resume span{flex:1;min-width:200px}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.modes{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.mode{flex:1;min-width:220px;text-align:left;background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:.7rem .9rem;font-size:.85rem}
+.mode .sub{display:block;font-weight:400;margin-top:.15rem}
+.mode:hover{border-color:var(--accent)}
+.mode.on{color:var(--text);border-color:var(--accent);background:#0ea5e922}
+body[data-mode="edit"] [data-only="convert"],body[data-mode="convert"] [data-only="edit"]{display:none!important}
+td input.mod{border-color:var(--accent);background:#38bdf814}
 @media(max-width:640px){body{padding:.6rem}.toolbar input[type=search],.toolbar select{max-width:none;width:100%}.sep{display:none}}
 </style>
 </head>
@@ -88,12 +95,17 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.1</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.2</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
+<nav class="modes" aria-label="Mode de travail">
+  <button class="mode on" data-mode="convert">🔄 Créer une carte<span class="sub">Nova · CSV · JSON → nouveau JSON Popina complet</span></button>
+  <button class="mode" data-mode="edit">✏️ Modifier un JSON existant<span class="sub">Modifications en masse, tout le reste du fichier est conservé</span></button>
+</nav>
+
 <!-- 1. Établissement -->
-<details class="card" id="etab" open>
+<details class="card" id="etab" open data-only="convert">
   <summary><span class="step">1</span> Informations de l'établissement <span class="sub">(sauvegardées automatiquement dans ce navigateur)</span></summary>
   <div class="grid">
     <div class="fg"><label for="f_name">Nom du commerce</label><input id="f_name" placeholder="Mon Commerce"></div>
@@ -114,13 +126,20 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div class="card">
   <h3><span class="step">2</span> Importer un fichier</h3>
   <div class="drop" id="drop">
-    <div>Glissez ici votre fichier ou cliquez pour parcourir</div>
-    <small>Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b></small>
+    <div data-only="convert">Glissez ici votre fichier ou cliquez pour parcourir</div>
+    <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b></small>
+    <div data-only="edit">Glissez ici le <b>JSON exporté depuis le Back-Office Popina</b> ou cliquez pour parcourir</div>
+    <small data-only="edit">Seuls les articles, familles, groupes, listes et pôles sont modifiés : personnel, salles, paiements, menus, imprimantes… restent intacts.<br>
+      Ensuite, utilisez les boutons <b>CSV</b> ci-dessous pour appliquer un CSV Popina (par ex. exporté ici puis retravaillé sous Excel).</small>
     <input type="file" id="file" accept=".csv,.json,.txt" style="display:none">
   </div>
   <div class="toolbar" style="margin-top:.7rem">
-    <button class="b-sec" id="btnSample">Charger un exemple CSV</button>
+    <button class="b-sec" id="btnSample" data-only="convert">Charger un exemple CSV</button>
     <button class="b-danger" id="btnClear" disabled>Tout vider</button>
+    <span class="sep" data-only="edit"></span>
+    <button class="b-sec" id="btnCsvAdd" data-only="edit" disabled title="Les articles du CSV sont ajoutés ou mis à jour, les autres sont gardés">➕ CSV : ajouter / mettre à jour</button>
+    <button class="b-sec" id="btnCsvReplace" data-only="edit" disabled title="La carte devient exactement le CSV : les articles absents du CSV sont supprimés">🔄 CSV : remplacer la carte</button>
+    <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
     <span class="sub" id="srcInfo"></span>
   </div>
   <div class="log" id="log" style="display:none"></div>
@@ -147,7 +166,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <input type="search" id="q" placeholder="🔎 Rechercher (nom, groupe, famille)…" aria-label="Rechercher">
       <select id="fG" aria-label="Filtrer par groupe"><option value="">Tous les groupes</option></select>
       <select id="fC" aria-label="Filtrer par famille"><option value="">Toutes les familles</option></select>
-      <select id="fI" aria-label="Filtrer par état"><option value="">Toutes les lignes</option><option value="check">⚠ À vérifier uniquement</option><option value="noplace">Sans pôle uniquement</option></select>
+      <select id="fI" aria-label="Filtrer par état"><option value="">Toutes les lignes</option><option value="check">⚠ À vérifier uniquement</option><option value="noplace">Sans pôle uniquement</option><option value="changed" data-only="edit">✏ Modifiés / ajoutés uniquement</option></select>
       <span class="sub" id="count"></span>
     </div>
     <div class="toolbar">
@@ -171,7 +190,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
       <tbody id="tbody"></tbody>
     </table></div>
     <datalist id="dlG"></datalist><datalist id="dlC"></datalist>
-    <div class="hint">💡 Orange = à vérifier (prix 0, TVA hors 5,5/10/20, doublon) · Rouge = invalide · Cliquez sur un compteur orange pour n'afficher que ces lignes.<br>
+    <div class="hint">💡 Orange = à vérifier (prix 0, TVA hors 5,5/10/20, doublon) · Rouge = invalide<span data-only="edit"> · Bleu = modifié par rapport au JSON d'origine</span> · Cliquez sur un compteur orange pour n'afficher que ces lignes.<br>
     ⌨ Entrée = cellule du dessous · Maj+Entrée = cellule du dessus · Ctrl+Z (hors champ) = annuler.</div>
   </div>
 
@@ -202,7 +221,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 <div class="card" id="exportCard" style="display:none">
   <h3><span class="step">4</span> Exporter</h3>
   <div class="exports">
-    <div class="exp"><h4>📦 JSON Back-Office Popina</h4><p>Carte complète + listes + paramètres de l'établissement. La grille de chaque famille est agrandie pour afficher tous ses articles.</p>
+    <div class="exp" data-only="edit"><h4>✏️ JSON Popina modifié</h4><p id="editSummary"></p><p>Le reste du fichier d'origine est conservé tel quel. Testez d'abord la réimportation sur un établissement de test.</p><button class="b-primary" data-exp="edit">Télécharger le JSON modifié</button></div>
+    <div class="exp" data-only="convert"><h4>📦 JSON Back-Office Popina</h4><p>Carte complète + listes + paramètres de l'établissement. La grille de chaque famille est agrandie pour afficher tous ses articles.</p>
       <div class="row" style="margin-bottom:.6rem"><label for="gridCols" class="sub" style="white-space:nowrap">Colonnes par famille</label>
         <select id="gridCols"><option value="auto">Auto (2 à 4)</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div><button class="b-primary" data-exp="json">Télécharger .json</button></div>
     <div class="exp"><h4>📄 CSV Popina (tableur)</h4><p>Pour retravailler sous Excel (UTF-8 BOM, séparateur ;).</p><button class="b-primary" data-exp="csv">Télécharger .csv</button></div>
@@ -343,7 +363,30 @@ const defaultPlaces = () => [
   {id:'5F6F94EC-19FE-44DA-B5AF-8989AC340E44', name:'Cuisine', extra:{}},
   {id:'CBC89272-5DC4-4E60-B2E4-A0650E41822F', name:'Bar', extra:{}}
 ];
-const state = { rows: [], lists: [], places: defaultPlaces(), source: '', fileName: '' };
+// mode 'edit' : edit = { original: JSON Popina importé, origIds: identifiants des articles d'origine }
+const state = { rows: [], lists: [], places: defaultPlaces(), source: '', fileName: '', mode: 'convert', edit: null };
+
+/* ============ Suivi des modifications (mode édition) ============ */
+const cents = v => v==null || isNaN(v) ? null : Math.round(v*100);
+const idOf = it => typeof it==='string' ? it : (it && (it.client_id || (it.item && it.item.client_id))) || null;
+const FIELD_DIFF = {
+  groupe:(r,o)=>r.groupe!==o.groupe, category:(r,o)=>r.category!==o.category, name:(r,o)=>r.name!==o.name,
+  price:(r,o)=>cents(r.price)!==cents(o.price), tva:(r,o)=>+r.tva!==+o.tva,
+  price2:(r,o)=>cents(r.price2)!==cents(o.price2), tva2:(r,o)=>r.price2!=null && +r.tva2!==+o.tva2
+};
+const origOf = r => ({ groupe:r.groupe, category:r.category, name:r.name, price:r.price, tva:r.tva, price2:r.price2, tva2:r.tva2,
+  lists:r.listIds.join('|'), places:[...r.placeIds].sort().join('|') });
+// Ligne nouvelle (sans r.orig) ou différente de l'article d'origine
+function rowChanged(r){
+  const o = r.orig; if(!o) return true;
+  return Object.values(FIELD_DIFF).some(d=>d(r,o)) || r.listIds.join('|')!==o.lists || [...(r.placeIds||[])].sort().join('|')!==o.places;
+}
+function editStats(){
+  const ids = new Set(state.rows.map(r=>r.id).filter(Boolean));
+  return { added: state.rows.filter(r=>!r.orig).length,
+    changed: state.rows.filter(r=>r.orig && rowChanged(r)).length,
+    deleted: state.edit ? state.edit.origIds.filter(id=>!ids.has(id)).length : 0 };
+}
 
 /* ============ Parsers ============ */
 function parseNova(text){
@@ -421,6 +464,7 @@ function parsePopinaCSV(text){
   let iT = f(h=>h.includes('tva sur place')||h==='tva');
   let iP2 = f(h=>h.includes('prix emporter')||h.includes('prix 2'));
   let iT2 = f(h=>h.includes('tva emporter')||h.includes('tva 2'));
+  const iId = f(h=>h==='id'||h.includes('id popina')); // présent dans les CSV exportés en mode édition
   if(iG===-1 && H.length>=2 && /cat|famille/.test(H[0]) && /cat|famille/.test(H[1])){ iG=0; iC=1; }
   if(iC===-1) iC = 0;
   if(iN===-1) iN=2; if(iP===-1) iP=3; if(iT===-1) iT=4;
@@ -432,7 +476,8 @@ function parsePopinaCSV(text){
     const t = num(c[iT]); const t2 = iT2>=0 && c[iT2] ? num(c[iT2]) : NaN;
     rows.push({ groupe: iG>=0 ? clean(c[iG])||'Groupe 1' : 'Groupe 1', category: clean(c[iC])||'Général', name,
       price: num(c[iP])||0, tva: isNaN(t)?20:t,
-      price2: isNaN(p2)?null:p2, tva2: isNaN(p2)?null:(isNaN(t2)?(isNaN(t)?20:t):t2), listIds:[], placeIds:[] });
+      price2: isNaN(p2)?null:p2, tva2: isNaN(p2)?null:(isNaN(t2)?(isNaN(t)?20:t):t2), listIds:[], placeIds:[],
+      csvId: iId>=0 ? clean(c[iId]) : '' });
   }
   return { rows, lists: [] };
 }
@@ -460,10 +505,11 @@ function parsePopinaJSON(obj){
   const rows = obj.items.filter(i=>i.name).map(i=>{
     const pr = i.prices||[]; const a = pr.find(p=>p.price_type===0) || pr[0]; const b = pr.find(p=>p.price_type===3);
     const g = macro[i.macro_category&&i.macro_category.client_id] || 'DIVERS';
-    return { groupe:g, category: catOf[i.client_id]||g, name:clean(i.name),
+    const r = { groupe:g, category: catOf[i.client_id]||g, name:clean(i.name),
       price: a ? a.amount/100 : 0, tva: a&&a.tax ? (tax[a.tax.client_id]??20) : 20,
       price2: b ? b.amount/100 : null, tva2: b ? (b.tax ? (tax[b.tax.client_id]??20) : 20) : null,
-      listIds:(i.shared_option_categories||[]).map(s=>s.client_id), placeIds: placeOf[i.client_id] || [] };
+      listIds:(i.shared_option_categories||[]).map(s=>s.client_id), placeIds: [...new Set(placeOf[i.client_id] || [])], id:i.client_id };
+    r.orig = origOf(r); return r;
   });
   const etabFill = {};
   if(obj.ticket_name) etabFill.name = obj.ticket_name; if(obj.ticket_company) etabFill.siret = obj.ticket_company.trim();
@@ -478,7 +524,9 @@ function load(result, source, name){
   if(state.rows.length) snapshot('import de '+name);
   $('resume').style.display = 'none';
   state.rows = result.rows; state.lists = result.lists; state.source = source; state.fileName = name;
-  if(result.places) state.places = result.places;
+  state.edit = result.edit || null;
+  if(result.edit) state.places = result.places || []; // pas de pôles par défaut dans un fichier existant
+  else if(result.places) state.places = result.places;
   else if(!state.places.length) state.places = defaultPlaces();
   if(result.etabFill){
     let n=0; Object.entries(result.etabFill).forEach(([k,v])=>{ const el=$('f_'+k); if(el && !el.value.trim()){ el.value=v; n++; } });
@@ -494,14 +542,68 @@ function load(result, source, name){
 function handleText(text, name){
   try{
     const t = text.trim();
+    if(state.mode==='edit'){
+      if(!t.startsWith('{')){
+        if(!state.edit) throw new Error("importez d'abord le JSON Popina à modifier, puis le CSV");
+        if(/^(G;DESC;|A;TYPE;|D;TYPE;)/m.test(t)) throw new Error('fichier Nova : utilisez le mode « Créer une carte »');
+        return mergeCSV(parsePopinaCSV(text).rows, name, csvReplace);
+      }
+      const obj = JSON.parse(t), res = parsePopinaJSON(obj);
+      delete res.etabFill;
+      res.edit = { original: obj, origIds: [...new Set(res.rows.map(r=>r.id))] };
+      return load(res, 'JSON Popina (édition)', name);
+    }
     if(name.toLowerCase().endsWith('.json') || t.startsWith('{')) return load(parsePopinaJSON(JSON.parse(t)), 'JSON Popina', name);
     if(/^(G;DESC;|A;TYPE;|D;TYPE;)/m.test(t)) return load(parseNova(text), 'Nova', name);
     load(parsePopinaCSV(text), 'CSV Popina', name);
   }catch(err){ console.error(err); log('Erreur : '+err.message,'e'); toast('Erreur de lecture : '+err.message,'err'); }
 }
-function handleFile(file){
+/* Mode édition : applique un CSV Popina sur la carte chargée.
+   Correspondance : colonne ID, sinon groupe + famille + nom, sinon nom seul s'il est unique. */
+// replace = true : les articles absents du CSV sont supprimés (la carte devient le CSV)
+function mergeCSV(csvRows, name, replace){
+  if(!csvRows.length) throw new Error('CSV sans article');
+  const low = s => (s||'').toLowerCase();
+  const byId = new Map(), byKey = new Map(), byName = new Map();
+  state.rows.forEach(r=>{
+    if(r.id) byId.set(r.id, r);
+    const k = keyOf(r); if(!byKey.has(k)) byKey.set(k, r);
+    (byName.get(low(r.name)) || byName.set(low(r.name), []).get(low(r.name))).push(r);
+  });
+  // 1. correspondances, sans rien modifier
+  const matched = new Set(), pairs = [], fresh = [], ambiguous = [];
+  const free = r => r && !matched.has(r) ? r : null;
+  csvRows.forEach(c=>{
+    const byN = (byName.get(low(c.name))||[]).filter(r=>!matched.has(r));
+    const r = free(c.csvId && byId.get(c.csvId)) || free(byKey.get(keyOf(c))) || (byN.length===1 ? byN[0] : null);
+    if(r){ matched.add(r); pairs.push([r,c]); return; }
+    if(byN.length>1) ambiguous.push(c.name);
+    delete c.csvId; fresh.push(c);
+  });
+  const missing = state.rows.filter(r=>!matched.has(r));
+  if(replace && missing.length && !confirm(`${missing.length} article(s) absent(s) du CSV vont être supprimés de la carte.\n\nContinuer ?`)) return;
+  // 2. application
+  snapshot('import CSV '+name);
+  const sig = r => JSON.stringify([r.groupe,r.category,r.name,cents(r.price),r.tva,cents(r.price2),r.price2!=null?r.tva2:null]);
+  let updated = 0;
+  pairs.forEach(([r,c])=>{ const before = sig(r); ['groupe','category','name','price','tva','price2','tva2'].forEach(f=>r[f] = c[f]); if(sig(r)!==before) updated++; });
+  if(replace) state.rows = state.rows.filter(r=>matched.has(r));
+  state.rows.push(...fresh);
+  renderAll();
+  log(`CSV ${name} : ${updated} article(s) mis à jour, ${pairs.length-updated} inchangé(s), ${fresh.length} ajouté(s), `
+    + (replace ? `${missing.length} supprimé(s) (absents du CSV).` : `${missing.length} absent(s) du CSV conservé(s).`));
+  if(ambiguous.length) log(`Nom présent plusieurs fois, ajouté comme nouvel article (vérifiez groupe/famille) : ${ambiguous.join(', ')}`,'w');
+  toast(`CSV appliqué : ${updated} mis à jour, ${fresh.length} ajouté(s)${replace?`, ${missing.length} supprimé(s)`:''} — Ctrl+Z pour annuler`, 'ok');
+}
+// Boutons CSV du mode édition (un CSV déposé dans la zone d'import = ajouter / mettre à jour)
+let csvReplace = false;
+const csvIn = $('csvFile');
+$('btnCsvAdd').onclick = () => { csvReplace = false; csvIn.click(); };
+$('btnCsvReplace').onclick = () => { csvReplace = true; csvIn.click(); };
+csvIn.onchange = e => { const f = e.target.files[0]; csvIn.value = ''; if(f) handleFile(f, ()=>{ csvReplace = false; }); };
+function handleFile(file, done){
   log(`Chargement de ${file.name} (${(file.size/1024).toFixed(1)} Ko)…`);
-  const r = new FileReader(); r.onload = e => handleText(decode(e.target.result), file.name); r.readAsArrayBuffer(file);
+  const r = new FileReader(); r.onload = e => { handleText(decode(e.target.result), file.name); if(done) done(); }; r.readAsArrayBuffer(file);
 }
 const drop = $('drop'), fileIn = $('file');
 drop.onclick = () => fileIn.click();
@@ -516,13 +618,35 @@ Boissons;Softs;Eau minérale;2,00;10;1,50;5,5
 Boissons;Alcools;Pinte blonde;6,00;20;;
 Plats;Burgers;Cheeseburger;12,90;10;11,90;10
 Plats;Burgers;Burger végé;13,50;10;12,50;10`, 'exemple.csv');
+function clearData(){
+  state.rows=[]; state.lists=[]; state.places=defaultPlaces(); state.source=''; state.fileName=''; state.edit=null;
+  showEditor(false); $('srcInfo').textContent=''; $('log').innerHTML=''; $('log').style.display='none';
+  saveWork();
+}
 $('btnClear').onclick = () => {
   if(!confirm('Vider tous les articles, listes et pôles ?')) return;
-  snapshot('vidage complet');
-  state.rows=[]; state.lists=[]; state.places=defaultPlaces(); state.source=''; state.fileName='';
-  showEditor(false); $('srcInfo').textContent=''; $('log').innerHTML=''; $('log').style.display='none';
-  saveWork(); toast('Données vidées — Ctrl+Z pour annuler');
+  snapshot('vidage complet'); clearData();
+  toast('Données vidées — Ctrl+Z pour annuler');
 };
+
+/* ============ Modes : créer une carte / modifier un JSON existant ============ */
+function applyMode(){
+  document.body.dataset.mode = state.mode;
+  document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('on', b.dataset.mode===state.mode));
+  fileIn.accept = '.csv,.json,.txt';
+  // numérotation des étapes : pas d'étape « établissement » en mode édition
+  document.querySelectorAll('.step').forEach((s,i)=>{ if(i) s.textContent = state.mode==='edit' ? i : i+1; });
+  if(state.mode!=='edit' && $('fI').value==='changed') $('fI').value='';
+}
+function setMode(m){
+  if(m===state.mode) return;
+  if(state.rows.length){
+    if(!confirm('Changer de mode vide la carte en cours. Continuer ?')) return;
+    snapshot('changement de mode'); clearData();
+  }
+  state.mode = m; applyMode(); saveWork();
+}
+document.querySelectorAll('.mode').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
 
 /* ============ Validation / filtres ============ */
 const keyOf = r => [r.groupe, r.category, (r.name||'').toLowerCase()].join('|');
@@ -543,20 +667,23 @@ function matcher(){
   return r => (!q || (r.name+' '+r.groupe+' '+r.category).toLowerCase().includes(q))
     && (!g || r.groupe===g) && (!c || r.category===c)
     && (f!=='check' || needsCheck(r,dup))
-    && (f!=='noplace' || !(r.placeIds||[]).length);
+    && (f!=='noplace' || !(r.placeIds||[]).length)
+    && (f!=='changed' || rowChanged(r));
 }
 const filteredRows = () => state.rows.filter(matcher());
 
 /* ============ Annuler (Ctrl+Z) ============ */
 const undoStack = [];
 function snapshot(label){
-  undoStack.push({ label, data: JSON.stringify({rows:state.rows, lists:state.lists, places:state.places, source:state.source, fileName:state.fileName}) });
+  // l'original n'est jamais modifié : on garde une simple référence
+  undoStack.push({ label, mode: state.mode, edit: state.edit, data: JSON.stringify({rows:state.rows, lists:state.lists, places:state.places, source:state.source, fileName:state.fileName}) });
   if(undoStack.length > 40) undoStack.shift();
   $('btnUndo').disabled = false;
 }
 function undo(){
   const s = undoStack.pop(); if(!s) return toast('Rien à annuler.');
   Object.assign(state, JSON.parse(s.data));
+  state.mode = s.mode; state.edit = s.edit; applyMode();
   $('srcInfo').textContent = state.source ? `Source : ${state.source} — ${state.fileName}` : '';
   showEditor(state.rows.length>0); renderAll();
   $('btnUndo').disabled = !undoStack.length;
@@ -572,13 +699,15 @@ document.addEventListener('keydown', e=>{
 
 /* ============ Sauvegarde automatique du travail ============ */
 const LS_WORK = 'pos_converter_v5_work';
-let saveTimer;
+let saveTimer, saveWarned = false;
 function saveWork(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(()=>{ try{
     if(!state.rows.length) return localStorage.removeItem(LS_WORK);
-    localStorage.setItem(LS_WORK, JSON.stringify({rows:state.rows, lists:state.lists, places:state.places, source:state.source, fileName:state.fileName, ts:Date.now()}));
-  }catch(e){} }, 400);
+    localStorage.setItem(LS_WORK, JSON.stringify({rows:state.rows, lists:state.lists, places:state.places, source:state.source, fileName:state.fileName, mode:state.mode, edit:state.edit, ts:Date.now()}));
+  }catch(e){
+    if(!saveWarned){ saveWarned = true; toast('Sauvegarde automatique impossible (fichier trop volumineux pour le navigateur).','err'); }
+  } }, 400);
 }
 function checkResume(){
   let d = null; try{ d = JSON.parse(localStorage.getItem(LS_WORK)||'null'); }catch(e){}
@@ -589,6 +718,7 @@ function checkResume(){
     $('resume').style.display = 'none';
     state.rows = d.rows; state.lists = d.lists||[]; state.places = (d.places&&d.places.length) ? d.places : defaultPlaces();
     state.source = d.source||''; state.fileName = d.fileName||'';
+    state.mode = d.mode==='edit' && d.edit ? 'edit' : 'convert'; state.edit = state.mode==='edit' ? d.edit : null; applyMode();
     $('srcInfo').textContent = state.source ? `Source : ${state.source} — ${state.fileName}` : '';
     showEditor(true); renderAll(); toast('Travail repris', 'ok');
   };
@@ -599,6 +729,7 @@ function checkResume(){
 function showEditor(on){
   $('editorCard').style.display = $('exportCard').style.display = on ? 'block' : 'none';
   $('btnClear').disabled = !on;
+  $('btnCsvAdd').disabled = $('btnCsvReplace').disabled = !state.edit;
 }
 /* Limites Popina : 13 catégories (10 conseillées pour les pictos), 15 sous-catégories / catégorie, 48 articles / sous-catégorie */
 const LIM = { groups:13, groupsReco:10, fams:15, items:48 };
@@ -633,16 +764,22 @@ function renderChips(){
     chip(i.zero,'prix à 0', i.zero?'w':'', i.zero?'check':'') +
     chip(i.tva,'TVA atypique', i.tva?'w':'', i.tva?'check':'') +
     chip(i.dup,'doublons', i.dup?'w':'', i.dup?'check':'') +
-    chip(i.empty,'noms vides', i.empty?'e':'', i.empty?'check':'');
+    chip(i.empty,'noms vides', i.empty?'e':'', i.empty?'check':'') +
+    (state.edit ? (()=>{ const s = editStats(), n = s.changed+s.added;
+      $('editSummary').textContent = `${s.changed} article(s) modifié(s), ${s.added} ajouté(s), ${s.deleted} supprimé(s) par rapport à ${state.fileName}.`;
+      return chip(n,'modifiés / ajoutés', '', n?'changed':'') + chip(s.deleted,'supprimés', s.deleted?'w':''); })() : '');
 }
 function fmt(n){ return n==null||isNaN(n) ? '' : (+n).toFixed(2); }
 const cellVal = (r,f) => (f==='price'||f==='price2') ? fmt(r[f]) : (r[f]==null ? '' : r[f]);
 function cellCls(r, dup){
-  return { groupe:'', category:'', price2:'',
+  const k = { groupe:'', category:'', price2:'',
     name: !r.name ? 'bad' : (dup.get(keyOf(r))>1 ? 'warn' : ''),
     price: !(r.price>0) ? 'warn' : '',
     tva: !tvaOk(r.tva) ? 'warn' : '',
     tva2: r.price2!=null && !tvaOk(r.tva2) ? 'warn' : '' };
+  // mode édition : cellules modifiées en bleu (les alertes restent prioritaires)
+  if(state.edit) Object.keys(FIELD_DIFF).forEach(f=>{ if(!k[f] && (!r.orig || FIELD_DIFF[f](r, r.orig))) k[f] = 'mod'; });
+  return k;
 }
 function renderRows(){
   const dup = dupMap(), ok = matcher();
@@ -852,6 +989,13 @@ function gridFor(n){
   const cols = pref==='auto' ? Math.min(4, Math.max(2, Math.ceil(n/8))) : Math.min(4, +pref);
   return { cols, lines: Math.max(8, Math.ceil(n/cols)) };
 }
+function newItem(r, id, macroId, taxOf, shared, now){
+  const prices = [{client_id:uuid(), name:null, amount:Math.round(r.price*100), price_type:0, tax:{client_id:taxOf(r.tva)}}];
+  if(r.price2!=null) prices.push({client_id:uuid(), name:null, amount:Math.round(r.price2*100), price_type:3, tax:{client_id:taxOf(r.tva2!=null?r.tva2:r.tva)}});
+  return { name:r.name, client_id:id, modular_price:false, preparation_step_index:-1, screen_name:null, kitchen_name:null, sku:null,
+    date_creation:now, barcode:null, is_weight_price:false, kilo_price:0.0, item_is_limodade:false, option_categories:[], prices,
+    macro_category:{client_id:macroId}, shared_option_categories:shared };
+}
 function buildJSON(){
   const e = etab(), now = new Date().toISOString();
   const macroMap = new Map(), catMap = new Map(), famCount = new Map(), famItems = new Map();
@@ -873,11 +1017,7 @@ function buildJSON(){
     const ck = base+'#'+Math.floor(nInFam/LIM.items);
     if(!catMap.has(ck)){ const idx=famCount.get(m.id); famCount.set(m.id,idx+1); catMap.set(ck,{id:uuid(), name:r.category, macroId:m.id, index:idx, positions:[]}); }
     const c = catMap.get(ck), itemId = uuid();
-    const prices = [{client_id:uuid(), name:null, amount:Math.round(r.price*100), price_type:0, tax:{client_id:taxId(r.tva)}}];
-    if(r.price2!=null) prices.push({client_id:uuid(), name:null, amount:Math.round(r.price2*100), price_type:3, tax:{client_id:taxId(r.tva2!=null?r.tva2:r.tva)}});
-    items.push({ name:r.name, client_id:itemId, modular_price:false, preparation_step_index:-1, screen_name:null, kitchen_name:null, sku:null,
-      date_creation:now, barcode:null, is_weight_price:false, kilo_price:0.0, item_is_limodade:false, option_categories:[], prices,
-      macro_category:{client_id:m.id}, shared_option_categories: r.listIds.filter(id=>listMap.has(id)).map(id=>({client_id:listMap.get(id)})) });
+    items.push(newItem(r, itemId, m.id, taxId, r.listIds.filter(id=>listMap.has(id)).map(id=>({client_id:listMap.get(id)})), now));
     c.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:c.positions.length, item:{client_id:itemId}});
     (r.placeIds||[]).forEach(pid=>{ (placeItems[pid] = placeItems[pid] || []).push(itemId); });
   });
@@ -905,10 +1045,151 @@ function buildJSON(){
   return { json: JSON.stringify(out,null,2), items: items.length, groups: macroMap.size, lists: shared.length };
 }
 
+/* Mode édition : on repart d'une copie du JSON d'origine et on n'y change que ce qui a été modifié.
+   Identifiants, personnel, salles, paiements, menus, imprimantes, mise en page… sont conservés. */
+function buildEditJSON(){
+  const src = state.edit.original, o = JSON.parse(JSON.stringify(src)), now = new Date().toISOString();
+  const origIds = new Set(state.edit.origIds), warn = [], info = [], st = { added:0, changed:0, deleted:0 };
+  ['items','taxes','macro_categories','shared_option_categories'].forEach(k=>{ if(!Array.isArray(o[k])) o[k] = []; });
+  if(!Array.isArray(o.cards) || !o.cards.length) o.cards = [{client_id:uuid(), name:'Carte Principale', selections:[], menus:[], categories:[]}];
+  o.cards.forEach(c=>{ c.categories = c.categories || []; c.categories.forEach(cat=>{ cat.positions = cat.positions || []; }); });
+  const card = o.cards[0];
+
+  // TVA : taux du fichier d'origine (même atypiques), sinon taux Popina standard, sinon 20 %
+  let badTax = 0;
+  const taxFor = v => {
+    const pct = cents(num(v)), t = o.taxes.find(t=>t.percentage===pct);
+    if(t) return t.client_id;
+    if(tvaOk(v)){ const n = num(v), id = taxId(n); o.taxes.push({client_id:id, name:'TVA '+String(n).replace('.',','), percentage:pct}); return id; }
+    badTax++; return taxFor(20);
+  };
+  const macroByName = new Map(o.macro_categories.map(m=>[m.name,m]));
+  const macroFor = name => {
+    if(!macroByName.has(name)){
+      const m = {client_id:uuid(), name, index:o.macro_categories.reduce((x,m)=>Math.max(x,(m.index??-1)+1),0), color:0, image:'Fichier 9', preparation_step_index:-1, number_of_categories:8};
+      o.macro_categories.push(m); macroByName.set(name,m); info.push(`Nouveau groupe « ${name} »`);
+    }
+    return macroByName.get(name);
+  };
+  const listIds = new Set(o.shared_option_categories.map(s=>s.client_id));
+  const itemById = new Map(o.items.map(it=>[it.client_id,it]));
+  const kept = new Set(), moved = new Set(), toPlace = [], rowItem = new Map();
+
+  state.rows.forEach(r=>{
+    if(!r.name) return;
+    const it = r.orig && origIds.has(r.id) && !kept.has(r.id) ? itemById.get(r.id) : null;
+    if(!it){ // nouvel article
+      const id = uuid(); st.added++;
+      o.items.push(newItem(r, id, macroFor(r.groupe).client_id, taxFor, r.listIds.filter(x=>listIds.has(x)).map(x=>({client_id:x})), now));
+      toPlace.push([r,id]); rowItem.set(r,id); return;
+    }
+    const og = r.orig; kept.add(it.client_id); rowItem.set(r, it.client_id);
+    if(!rowChanged(r)) return;
+    st.changed++;
+    if(r.name!==og.name) it.name = r.name;
+    it.prices = it.prices || [];
+    let a = it.prices.find(p=>p.price_type===0) || it.prices[0];
+    if(!a){ a = {client_id:uuid(), name:null, price_type:0, amount:0, tax:{client_id:taxFor(r.tva)}}; it.prices.unshift(a); }
+    if(FIELD_DIFF.price(r,og)) a.amount = cents(r.price);
+    if(FIELD_DIFF.tva(r,og)) a.tax = {client_id:taxFor(r.tva)};
+    const bi = it.prices.findIndex(p=>p.price_type===3);
+    if(r.price2==null){ if(bi>-1) it.prices.splice(bi,1); }
+    else if(bi===-1) it.prices.push({client_id:uuid(), name:null, amount:cents(r.price2), price_type:3, tax:{client_id:taxFor(r.tva2??r.tva)}});
+    else {
+      if(FIELD_DIFF.price2(r,og)) it.prices[bi].amount = cents(r.price2);
+      if(FIELD_DIFF.tva2(r,og) || og.price2==null) it.prices[bi].tax = {client_id:taxFor(r.tva2??r.tva)};
+    }
+    if(r.groupe!==og.groupe) it.macro_category = {client_id:macroFor(r.groupe).client_id};
+    if(r.groupe!==og.groupe || r.category!==og.category){ moved.add(it.client_id); toPlace.push([r, it.client_id]); }
+    if(r.listIds.join('|')!==og.lists){
+      const old = it.shared_option_categories || [];
+      it.shared_option_categories = r.listIds.filter(x=>listIds.has(x)).map(x=>old.find(s=>s.client_id===x) || {client_id:x});
+    }
+  });
+
+  // Articles supprimés
+  const del = new Set([...origIds].filter(id=>!kept.has(id)));
+  st.deleted = del.size;
+  o.items = o.items.filter(it=>!del.has(it.client_id));
+
+  // Cartes : on retire les supprimés (toutes cartes) et les déplacés (carte principale)
+  const hadItems = new Set();
+  o.cards.forEach((c,ci)=>c.categories.forEach(cat=>{
+    if(cat.positions.some(p=>p.item)) hadItems.add(cat.client_id);
+    cat.positions = cat.positions.filter(p=>!(p.item && (del.has(p.item.client_id) || (ci===0 && moved.has(p.item.client_id)))));
+  }));
+  // ... puis on place les nouveaux et déplacés dans leur famille (créée si besoin, 48 articles max)
+  const macroName = id => (o.macro_categories.find(m=>m.client_id===id)||{}).name;
+  toPlace.forEach(([r,id])=>{
+    let cat = card.categories.find(c=>c.name===r.category && macroName(c.macro_category&&c.macro_category.client_id)===r.groupe
+      && c.positions.filter(p=>p.item).length < LIM.items);
+    if(!cat){
+      const m = macroFor(r.groupe), sib = card.categories.filter(c=>c.macro_category && c.macro_category.client_id===m.client_id);
+      cat = {client_id:uuid(), name:r.category, index:sib.reduce((x,c)=>Math.max(x,(c.index??-1)+1),0), number_of_columns:4, number_of_lines:8, positions:[], macro_category:{client_id:m.client_id}};
+      card.categories.push(cat); m.number_of_categories = Math.max(m.number_of_categories||8, sib.length+1);
+      info.push(`Nouvelle famille « ${r.groupe} › ${r.category} »`);
+    }
+    const used = new Set(cat.positions.map(p=>p.index)); let idx = 0; while(used.has(idx)) idx++;
+    cat.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:idx, item:{client_id:id}});
+    cat.number_of_lines = Math.max(cat.number_of_lines||8, Math.ceil((idx+1)/(cat.number_of_columns||4)));
+  });
+  // Familles et groupes vidés par les modifications
+  o.cards.forEach(c=>{ c.categories = c.categories.filter(cat=>{
+    const keep = cat.positions.length || !hadItems.has(cat.client_id);
+    if(!keep) info.push(`Famille vide retirée : « ${cat.name} »`); return keep; }); });
+  const usedM = new Set();
+  o.items.forEach(it=>it.macro_category && usedM.add(it.macro_category.client_id));
+  o.cards.forEach(c=>c.categories.forEach(cat=>cat.macro_category && usedM.add(cat.macro_category.client_id)));
+  const hadM = new Set((src.items||[]).map(it=>it.macro_category && it.macro_category.client_id).filter(Boolean));
+  o.macro_categories = o.macro_categories.filter(m=>{
+    const keep = usedM.has(m.client_id) || !hadM.has(m.client_id);
+    if(!keep) info.push(`Groupe vide retiré : « ${m.name} »`); return keep; });
+  o.number_of_lines = Math.max(o.number_of_lines||8, o.macro_categories.length);
+
+  // Listes de condiments : nom / obligatoire / choix multiple
+  state.lists.forEach(l=>{
+    const s = o.shared_option_categories.find(s=>s.client_id===l.id); if(!s) return;
+    if(s.name!==l.name) s.name = l.name;
+    if(!!s.is_mandatory!==l.mandatory) s.is_mandatory = l.mandatory;
+    if(!!s.is_multiple!==l.multiple) s.is_multiple = l.multiple;
+  });
+
+  // Pôles : on garde les entrées d'origine (même format), on ajoute / retire les affectations
+  if(src.places || state.places.length){
+    const origPlaces = new Map((src.places||[]).map(p=>[p.client_id,p]));
+    const asObj = (src.places||[]).some(p=>(p.items||[]).some(it=>it && typeof it==='object'));
+    o.places = state.places.map(p=>{
+      const op = origPlaces.get(p.id);
+      const out = op ? JSON.parse(JSON.stringify(op)) : {client_id:p.id, creation_date:now, name:p.name, shloud_print_all_items:false, printer_id:null, should_print_unknown_items:false, items:[]};
+      out.name = p.name;
+      const assigned = new Set(state.rows.filter(r=>(r.placeIds||[]).includes(p.id)).map(r=>rowItem.get(r)).filter(Boolean));
+      out.items = (out.items||[]).filter(it=>{ const id = idOf(it); return origIds.has(id) ? assigned.delete(id) : true; });
+      assigned.forEach(id=>out.items.push(asObj ? {client_id:id} : id));
+      return out;
+    });
+    const gone = [...origPlaces.keys()].filter(id=>!state.places.some(p=>p.id===id));
+    if(gone.length && Array.isArray(o.place_printer_links))
+      o.place_printer_links = o.place_printer_links.filter(l=>!gone.some(id=>JSON.stringify(l).includes(id)));
+  }
+
+  // Articles supprimés encore référencés ailleurs (menus, sélections…)
+  if(del.size){
+    const rest = JSON.stringify({...o, items:undefined});
+    const refs = [...del].filter(id=>rest.includes(id)).map(id=>(itemById.get(id)||{}).name);
+    if(refs.length) warn.push(`${refs.length} article(s) supprimé(s) encore cité(s) ailleurs dans le fichier (menus, sélections…) : ${refs.join(', ')}`);
+  }
+  if(badTax) warn.push(`${badTax} TVA absente(s) du fichier d'origine et hors 5,5/10/20 : exportée(s) en TVA 20 %.`);
+  o.last_update = now;
+  return { json: JSON.stringify(o,null,2), st, warn, info };
+}
+
 const q2 = s => '"'+String(s).replace(/"/g,'""')+'"';
 function buildCSV(){
-  const L = ['Groupe (Macro-catégorie);Famille;Description (Nom article);Prix Sur place;TVA Sur place;Prix Emporter;TVA Emporter'];
-  state.rows.forEach(r=>L.push([q2(r.groupe),q2(r.category),q2(r.name),fmt(r.price),r.tva,fmt(r.price2),r.price2!=null?(r.tva2??r.tva):''].join(';')));
+  // mode édition : colonne ID pour retrouver chaque article à la réimportation du CSV
+  const withId = !!state.edit;
+  const L = ['Groupe (Macro-catégorie);Famille;Description (Nom article);Prix Sur place;TVA Sur place;Prix Emporter;TVA Emporter' + (withId ? ';ID Popina (ne pas modifier)' : '')];
+  state.rows.forEach(r=>L.push([q2(r.groupe),q2(r.category),q2(r.name),fmt(r.price),r.tva,fmt(r.price2),r.price2!=null?(r.tva2??r.tva):'']
+    .concat(withId ? [r.id||''] : []).join(';')));
   return L.join('\r\n')+'\r\n';
 }
 function buildTDE(){
@@ -923,11 +1204,12 @@ function preflight(kind){
   if(i.empty){ toast(`${i.empty} article(s) sans nom : corrigez ou supprimez-les.`,'err'); return false; }
   const nop = state.rows.filter(r=>!(r.placeIds||[]).length).length;
   if(state.places.length && nop) log(`${nop} article(s) sans pôle de préparation (non envoyés en cuisine/bar).`,'w');
-  if(i.tva) log(`${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
+  if(i.tva) log(kind==='edit' ? `${i.tva} article(s) avec une TVA hors 5,5/10/20 : taux conservé s'il existe dans le JSON d'origine, sinon 20 %.`
+    : `${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
   if(i.zero) log(`${i.zero} article(s) à prix 0 €.`,'w');
-  if(kind==='json'){
-    if(!$('f_name').value.trim()) log("Nom du commerce vide : le JSON utilisera « MON COMMERCE ».",'w');
-    if($('siretTag').classList.contains('bad')) log('SIRET/SIREN invalide : vérifiez-le avant import dans Popina.','w');
+  if(kind==='json' || kind==='edit'){
+    if(kind==='json' && !$('f_name').value.trim()) log("Nom du commerce vide : le JSON utilisera « MON COMMERCE ».",'w');
+    if(kind==='json' && $('siretTag').classList.contains('bad')) log('SIRET/SIREN invalide : vérifiez-le avant import dans Popina.','w');
     const lim = limits(), errs = [];
     if(lim.groups > LIM.groups) errs.push(`${lim.groups} groupes (max ${LIM.groups})`);
     else if(lim.groups > LIM.groupsReco) log(`${lim.groups} groupes : au-delà de ${LIM.groupsReco}, les pictogrammes ne s'affichent plus dans Popina.`,'w');
@@ -943,7 +1225,14 @@ function preflight(kind){
 document.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>{
   const kind = b.dataset.exp;
   if(!preflight(kind)) return;
-  const base = slug(etab().name) || slug(state.fileName.replace(/\.[^.]+$/,'')) || 'carte';
+  const base = slug(state.edit ? state.edit.original.name : etab().name) || slug(state.fileName.replace(/\.[^.]+$/,'')) || 'carte';
+  if(kind==='edit'){
+    const r = buildEditJSON();
+    r.info.forEach(m=>log(m)); r.warn.forEach(m=>log(m,'w'));
+    download(r.json, base+'_popina_modifie.json','application/json');
+    log(`Export JSON modifié : ${r.st.changed} modifié(s), ${r.st.added} ajouté(s), ${r.st.deleted} supprimé(s).`);
+    toast(`JSON modifié : ${r.st.changed} modif., ${r.st.added} ajout(s), ${r.st.deleted} suppr.`, r.warn.length ? '' : 'ok');
+  }
   if(kind==='json'){ const r = buildJSON(); download(r.json, base+'_popina.json','application/json'); toast(`JSON : ${r.items} articles, ${r.groups} groupes, ${r.lists} listes`,'ok'); log(`Export JSON : ${r.items} articles, ${r.lists} listes.`); }
   if(kind==='csv'){ download(buildCSV(), base+'_popina.csv','text/csv;charset=utf-8',true); toast('CSV Popina exporté','ok'); }
   if(kind==='tde'){ download(buildTDE(), base+'_smartTDE.csv','text/csv;charset=utf-8'); toast('CSV SmartTDE exporté','ok'); }
@@ -951,6 +1240,7 @@ document.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>{
 
 /* ============ Init ============ */
 loadEtab();
+applyMode();
 checkResume();
 </script>
 </body>
