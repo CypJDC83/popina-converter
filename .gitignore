@@ -1,0 +1,9 @@
+# Données clients (exports Popina) : à ne jamais publier
+/*.json
+
+# Réglages locaux de Claude (serveur de test)
+/.claude/
+
+# Anciennes copies manuelles : leur contenu est dans l'historique git
+/indexold*.html
+/indexOLD*.html

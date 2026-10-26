@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.2 – Field Tech by cyp</title>
+<title>POS Converter v5.3 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -88,6 +88,14 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mode.on{color:var(--text);border-color:var(--accent);background:#0ea5e922}
 body[data-mode="edit"] [data-only="convert"],body[data-mode="convert"] [data-only="edit"]{display:none!important}
 td input.mod{border-color:var(--accent);background:#38bdf814}
+.diffbox{margin-top:.8rem}
+.diffbox>summary{cursor:pointer;color:var(--accent);font-size:.8rem;font-weight:700}
+.diff{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:.5rem;font-size:.74rem}
+.diff>div{padding:.3rem .6rem;border-top:1px solid var(--line)}
+.diff>div:first-child{border-top:0}
+.diff .k{display:inline-block;min-width:78px;font-weight:700}
+.diff .d-add .k{color:var(--ok)}.diff .d-del .k{color:var(--err)}.diff .d-mod .k{color:var(--accent)}
+.diff s{color:var(--muted)}
 @media(max-width:640px){body{padding:.6rem}.toolbar input[type=search],.toolbar select{max-width:none;width:100%}.sep{display:none}}
 </style>
 </head>
@@ -95,7 +103,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.2</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.3</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -185,6 +193,18 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
       <button class="b-sec" id="btnPlaceSet">Remplacer</button>
       <span class="sub">→ actions appliquées aux lignes affichées</span>
     </div>
+    <div class="toolbar">
+      <span class="sub">Prix :</span>
+      <select id="bpMode" aria-label="Type de changement de prix"><option value="pct">+ / − %</option><option value="add">+ / − €</option><option value="set">Fixer à (€)</option><option value="round">Arrondir à (€)</option></select>
+      <input id="bpVal" inputmode="decimal" placeholder="ex. 5" style="width:80px" aria-label="Valeur">
+      <select id="bpTarget" aria-label="Prix concernés"><option value="both">Sur place + emporter</option><option value="p1">Sur place</option><option value="p2">Emporter</option></select>
+      <button class="b-sec" id="btnBulkPrice">Appliquer</button>
+      <span class="sep"></span>
+      <span class="sub">Déplacer vers :</span>
+      <input id="mvG" list="dlG" placeholder="Groupe (inchangé)" style="width:170px" aria-label="Groupe cible">
+      <input id="mvC" list="dlC" placeholder="Famille (inchangée)" style="width:170px" aria-label="Famille cible">
+      <button class="b-sec" id="btnMove">Déplacer</button>
+    </div>
     <div class="scroll"><table>
       <thead><tr><th>Groupe</th><th>Famille</th><th>Article</th><th>Prix place €</th><th>TVA %</th><th>Prix empt. €</th><th>TVA %</th><th>Pôles de préparation</th><th>Listes</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
@@ -228,6 +248,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
     <div class="exp"><h4>📄 CSV Popina (tableur)</h4><p>Pour retravailler sous Excel (UTF-8 BOM, séparateur ;).</p><button class="b-primary" data-exp="csv">Télécharger .csv</button></div>
     <div class="exp"><h4>🧾 CSV SmartTDE</h4><p>Prix en centimes, sans TVA.</p><button class="b-primary" data-exp="tde">Télécharger .csv</button></div>
   </div>
+  <details class="diffbox" id="diffBox" data-only="edit"><summary>Voir le détail des changements avant export</summary><div class="diff" id="diffList"></div></details>
 </div>
 
 </div>
@@ -240,7 +261,13 @@ const uuid = () => (crypto && crypto.randomUUID) ? crypto.randomUUID() :
   'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random()*16|0; return (c==='x'?r:(r&3|8)).toString(16); });
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 const clean = s => { if(s==null) return ''; let c = String(s).replace(/[\x00-\x1F\x7F-\x9F]/g,'').replace(/\u00A0/g,' ').trim(); return c.length>254 ? c.slice(0,254) : c; };
-const num = v => { const n = parseFloat(String(v ?? '').replace(',', '.').replace(/[^0-9.\-]/g,'')); return isNaN(n) ? NaN : n; };
+// Accepte « 3,50 », « 3.50 », « 1 234,50 », « 1.234,50 », « 1,234.50 » (le dernier séparateur est la décimale)
+const num = v => {
+  let s = String(v ?? '').replace(/[\s €]/g,'');
+  if(s.includes(',') && s.includes('.')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g,'').replace(',', '.') : s.replace(/,/g,'');
+  else s = s.replace(',', '.');
+  const n = parseFloat(s.replace(/[^0-9.\-]/g,'')); return isNaN(n) ? NaN : n;
+};
 const slug = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
 
 function toast(msg, type=''){
@@ -767,8 +794,39 @@ function renderChips(){
     chip(i.empty,'noms vides', i.empty?'e':'', i.empty?'check':'') +
     (state.edit ? (()=>{ const s = editStats(), n = s.changed+s.added;
       $('editSummary').textContent = `${s.changed} article(s) modifié(s), ${s.added} ajouté(s), ${s.deleted} supprimé(s) par rapport à ${state.fileName}.`;
+      renderDiff();
       return chip(n,'modifiés / ajoutés', '', n?'changed':'') + chip(s.deleted,'supprimés', s.deleted?'w':''); })() : '');
 }
+// Mode édition : liste « avant → après » de tous les changements (calculée seulement quand le bloc est ouvert)
+function renderDiff(){
+  if(!state.edit || !$('diffBox').open) return;
+  const eur = v => v==null ? '—' : fmt(v).replace('.',',')+' €', pct = v => v==null ? '—' : String(v).replace('.',',')+' %';
+  const names = (ids, all) => ids.split('|').filter(Boolean).map(id=>(all.find(x=>x.id===id)||{}).name||'?').join(', ') || 'aucun';
+  const ar = (label, a, b) => `${label} : <s>${esc(a)}</s> → ${esc(b)}`;
+  const out = [];
+  state.rows.forEach(r=>{
+    if(!r.orig) return out.push(['add','Ajouté', r.name, esc(`${r.groupe} › ${r.category} · ${eur(r.price)}`)]);
+    if(!rowChanged(r)) return;
+    const o = r.orig, ch = [], pl = [...(r.placeIds||[])].sort().join('|'), li = r.listIds.join('|');
+    if(FIELD_DIFF.name(r,o)) ch.push(ar('nom', o.name, r.name));
+    if(FIELD_DIFF.groupe(r,o) || FIELD_DIFF.category(r,o)) ch.push(ar('famille', o.groupe+' › '+o.category, r.groupe+' › '+r.category));
+    if(FIELD_DIFF.price(r,o)) ch.push(ar('prix', eur(o.price), eur(r.price)));
+    if(FIELD_DIFF.tva(r,o)) ch.push(ar('TVA', pct(o.tva), pct(r.tva)));
+    if(FIELD_DIFF.price2(r,o)) ch.push(ar('emporter', eur(o.price2), eur(r.price2)));
+    if(FIELD_DIFF.tva2(r,o)) ch.push(ar('TVA emp.', pct(o.tva2), pct(r.tva2)));
+    if(pl!==o.places) ch.push(ar('pôles', names(o.places, state.places), names(pl, state.places)));
+    if(li!==o.lists) ch.push(ar('listes', names(o.lists, state.lists), names(li, state.lists)));
+    out.push(['mod','Modifié', r.name, ch.join(' · ')]);
+  });
+  const ids = new Set(state.rows.map(r=>r.id)), orig = new Set(state.edit.origIds);
+  (state.edit.original.items||[]).forEach(i=>{ if(orig.has(i.client_id) && !ids.has(i.client_id)) out.push(['del','Supprimé', i.name, '']); });
+  const MAX = 500;
+  $('diffList').innerHTML = out.length
+    ? out.slice(0,MAX).map(([c,k,n,d])=>`<div class="d-${c}"><span class="k">${k}</span><b>${esc(n)}</b> ${d}</div>`).join('')
+      + (out.length>MAX ? `<div class="sub">… et ${out.length-MAX} autre(s) changement(s)</div>` : '')
+    : '<div class="empty">Aucun changement pour l\'instant.</div>';
+}
+$('diffBox').addEventListener('toggle', renderDiff);
 function fmt(n){ return n==null||isNaN(n) ? '' : (+n).toFixed(2); }
 const cellVal = (r,f) => (f==='price'||f==='price2') ? fmt(r[f]) : (r[f]==null ? '' : r[f]);
 function cellCls(r, dup){
@@ -901,7 +959,8 @@ $('lbody').addEventListener('change', e=>{
   l[inp.dataset.lf] = inp.type==='checkbox' ? inp.checked : clean(inp.value) || l.name;
   renderSide();
 });
-$('q').addEventListener('input', renderRows);
+let qTimer; // évite de reconstruire le tableau à chaque lettre tapée
+$('q').addEventListener('input', ()=>{ clearTimeout(qTimer); qTimer = setTimeout(renderRows, 180); });
 $('fG').addEventListener('change', ()=>{ renderFilters(); renderRows(); });
 $('fC').addEventListener('change', renderRows);
 $('fI').addEventListener('change', renderRows);
@@ -927,12 +986,50 @@ $('btnBulkTva').onclick = () => {
   rows.forEach(r=>{ r.tva=v; if(r.price2!=null) r.tva2=v; });
   renderAll(); toast(`TVA ${v} % appliquée à ${rows.length} ligne(s)`, 'ok');
 };
+$('btnBulkPrice').onclick = () => {
+  const mode = $('bpMode').value, v = num($('bpVal').value), tgt = $('bpTarget').value;
+  if(isNaN(v) || (mode==='round' && v<=0) || (mode==='set' && v<0)) return toast('Saisissez une valeur valide.','err');
+  const rows = filteredRows(); if(!rows.length) return toast('Aucune ligne affichée.','err');
+  const f = p => Math.max(0, Math.round((mode==='pct' ? p*(1+v/100) : mode==='add' ? p+v : mode==='set' ? v : Math.round(p/v)*v)*100)/100);
+  snapshot('prix en masse');
+  let n = 0;
+  rows.forEach(r=>{
+    const before = [cents(r.price), cents(r.price2)];
+    if(tgt!=='p2') r.price = f(r.price);
+    if(tgt!=='p1' && r.price2!=null) r.price2 = f(r.price2);
+    if(before[0]!==cents(r.price) || before[1]!==cents(r.price2)) n++;
+  });
+  renderAll(); toast(`Prix modifiés sur ${n} ligne(s)`, 'ok');
+};
+// Déplacer les lignes affichées (sert aussi à renommer une famille : filtrer la famille puis la « déplacer » vers le nouveau nom)
+$('btnMove').onclick = () => {
+  const g = clean($('mvG').value), c = clean($('mvC').value);
+  if(!g && !c) return toast('Indiquez un groupe et/ou une famille.','err');
+  const rows = filteredRows(); if(!rows.length) return toast('Aucune ligne affichée.','err');
+  if(!confirm(`Déplacer ${rows.length} article(s) vers « ${g||'(même groupe)'} › ${c||'(même famille)'} » ?`)) return;
+  snapshot('déplacement en masse');
+  rows.forEach(r=>{ if(g) r.groupe = g; if(c) r.category = c; });
+  $('mvG').value = $('mvC').value = ''; $('fG').value = ''; $('fC').value = '';
+  renderAll(); toast(`${rows.length} article(s) déplacé(s)`, 'ok');
+};
+// Fusionne les doublons identiques (mêmes groupe, famille, nom et prix) en réunissant leurs pôles et listes
 $('btnDedupe').onclick = () => {
-  const seen = new Set(); const out=[]; let n=0;
-  state.rows.forEach(r=>{ const k=[r.groupe,r.category,r.name.toLowerCase(),r.price,r.price2].join('|'); if(seen.has(k)){ n++; return; } seen.add(k); out.push(r); });
-  if(!n) return toast('Aucun doublon exact');
+  const keep = new Map(), out = [];
   snapshot('fusion des doublons');
-  state.rows = out; renderAll(); toast(`${n} doublon(s) exact(s) supprimé(s)`, 'ok');
+  state.rows.forEach(r=>{
+    const k = [keyOf(r), cents(r.price), cents(r.price2)].join('|'), first = keep.get(k);
+    if(!first){ keep.set(k, r); out.push(r); return; }
+    first.placeIds = [...new Set([...(first.placeIds||[]), ...(r.placeIds||[])])];
+    first.listIds = [...new Set([...first.listIds, ...r.listIds])];
+  });
+  const n = state.rows.length - out.length;
+  if(n){ state.rows = out; }
+  else { undoStack.pop(); $('btnUndo').disabled = !undoStack.length; }
+  const rest = issues().dup;
+  if(rest){ $('q').value=''; $('fG').value=''; $('fC').value=''; $('fI').value='check'; }
+  renderAll();
+  toast((n ? `${n} doublon(s) identique(s) fusionné(s).` : 'Aucun doublon identique.')
+    + (rest ? ` ${rest} ligne(s) portent le même nom avec des prix différents : à vérifier (affichées).` : ''), n ? 'ok' : '');
 };
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
   document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
@@ -986,7 +1083,8 @@ $('btnPlaceSet').onclick = () => bulkPlace('set');
 // Popina refuse plus de 4 colonnes (« Failed to parse subCategory ») → 4 col. × 12 lignes = 48 articles max
 function gridFor(n){
   const pref = $('gridCols').value;
-  const cols = pref==='auto' ? Math.min(4, Math.max(2, Math.ceil(n/8))) : Math.min(4, +pref);
+  let cols = pref==='auto' ? Math.min(4, Math.max(2, Math.ceil(n/8))) : Math.min(4, +pref);
+  cols = Math.max(cols, Math.min(4, Math.ceil(n/12))); // 12 lignes max : on élargit si besoin
   return { cols, lines: Math.max(8, Math.ceil(n/cols)) };
 }
 function newItem(r, id, macroId, taxOf, shared, now){
@@ -1073,7 +1171,17 @@ function buildEditJSON(){
   };
   const listIds = new Set(o.shared_option_categories.map(s=>s.client_id));
   const itemById = new Map(o.items.map(it=>[it.client_id,it]));
-  const kept = new Set(), moved = new Set(), toPlace = [], rowItem = new Map();
+  const kept = new Set(), moved = new Set(), fresh = new Set(), toPlace = [], rowItem = new Map();
+  const macroName = id => (o.macro_categories.find(m=>m.client_id===id)||{}).name;
+
+  // Groupe renommé en bloc (tous ses articles vers un même nouveau nom) : on renomme le groupe d'origine (couleur, image, place conservées)
+  const byOldGroup = new Map();
+  state.rows.forEach(r=>{ if(r.orig && origIds.has(r.id)) (byOldGroup.get(r.orig.groupe) || byOldGroup.set(r.orig.groupe, []).get(r.orig.groupe)).push(r); });
+  byOldGroup.forEach((rs, old)=>{
+    const g = rs[0].groupe, m = macroByName.get(old);
+    if(!m || g===old || macroByName.has(g) || rs.some(r=>r.groupe!==g) || state.rows.some(r=>!r.orig && r.groupe===old)) return;
+    macroByName.delete(old); m.name = g; macroByName.set(g, m); info.push(`Groupe renommé : « ${old} » → « ${g} »`);
+  });
 
   state.rows.forEach(r=>{
     if(!r.name) return;
@@ -1081,7 +1189,7 @@ function buildEditJSON(){
     if(!it){ // nouvel article
       const id = uuid(); st.added++;
       o.items.push(newItem(r, id, macroFor(r.groupe).client_id, taxFor, r.listIds.filter(x=>listIds.has(x)).map(x=>({client_id:x})), now));
-      toPlace.push([r,id]); rowItem.set(r,id); return;
+      toPlace.push([r,id]); rowItem.set(r,id); fresh.add(id); return;
     }
     const og = r.orig; kept.add(it.client_id); rowItem.set(r, it.client_id);
     if(!rowChanged(r)) return;
@@ -1099,8 +1207,9 @@ function buildEditJSON(){
       if(FIELD_DIFF.price2(r,og)) it.prices[bi].amount = cents(r.price2);
       if(FIELD_DIFF.tva2(r,og) || og.price2==null) it.prices[bi].tax = {client_id:taxFor(r.tva2??r.tva)};
     }
-    if(r.groupe!==og.groupe) it.macro_category = {client_id:macroFor(r.groupe).client_id};
-    if(r.groupe!==og.groupe || r.category!==og.category){ moved.add(it.client_id); toPlace.push([r, it.client_id]); }
+    const oldM = it.macro_category && it.macro_category.client_id;
+    if(r.groupe!==og.groupe){ const m = macroFor(r.groupe); if(m.client_id!==oldM) it.macro_category = {client_id:m.client_id}; }
+    if((it.macro_category && it.macro_category.client_id)!==oldM || r.category!==og.category){ moved.add(it.client_id); toPlace.push([r, it.client_id]); }
     if(r.listIds.join('|')!==og.lists){
       const old = it.shared_option_categories || [];
       it.shared_option_categories = r.listIds.filter(x=>listIds.has(x)).map(x=>old.find(s=>s.client_id===x) || {client_id:x});
@@ -1112,6 +1221,20 @@ function buildEditJSON(){
   st.deleted = del.size;
   o.items = o.items.filter(it=>!del.has(it.client_id));
 
+  // Famille renommée en bloc (tous ses articles vers une même nouvelle famille du même groupe) : on la renomme, mise en page conservée
+  const rowOfItem = new Map([...rowItem].map(([r,id])=>[id,r]));
+  card.categories.forEach(cat=>{
+    const ids = cat.positions.filter(p=>p.item && !del.has(p.item.client_id)).map(p=>p.item.client_id);
+    const rs = ids.map(id=>moved.has(id) ? rowOfItem.get(id) : null);
+    if(!rs.length || rs.some(r=>!r)) return;
+    const g = rs[0].groupe, c = rs[0].category, mid = cat.macro_category && cat.macro_category.client_id;
+    if(rs.some(r=>r.groupe!==g || r.category!==c) || macroName(mid)!==g) return;
+    if(card.categories.some(k=>k!==cat && k.name===c && (k.macro_category && k.macro_category.client_id)===mid)) return;
+    info.push(`Famille renommée : « ${cat.name} » → « ${c} »`);
+    cat.name = c; ids.forEach(id=>moved.delete(id));
+  });
+  const placeNow = toPlace.filter(([,id])=>fresh.has(id) || moved.has(id));
+
   // Cartes : on retire les supprimés (toutes cartes) et les déplacés (carte principale)
   const hadItems = new Set();
   o.cards.forEach((c,ci)=>c.categories.forEach(cat=>{
@@ -1119,8 +1242,7 @@ function buildEditJSON(){
     cat.positions = cat.positions.filter(p=>!(p.item && (del.has(p.item.client_id) || (ci===0 && moved.has(p.item.client_id)))));
   }));
   // ... puis on place les nouveaux et déplacés dans leur famille (créée si besoin, 48 articles max)
-  const macroName = id => (o.macro_categories.find(m=>m.client_id===id)||{}).name;
-  toPlace.forEach(([r,id])=>{
+  placeNow.forEach(([r,id])=>{
     let cat = card.categories.find(c=>c.name===r.category && macroName(c.macro_category&&c.macro_category.client_id)===r.groupe
       && c.positions.filter(p=>p.item).length < LIM.items);
     if(!cat){
@@ -1131,6 +1253,7 @@ function buildEditJSON(){
     }
     const used = new Set(cat.positions.map(p=>p.index)); let idx = 0; while(used.has(idx)) idx++;
     cat.positions.push({client_id:uuid(), highlight_level:0, brightness_level:0, alternate_color:-1, index:idx, item:{client_id:id}});
+    if(Math.ceil((idx+1)/(cat.number_of_columns||4)) > 12) cat.number_of_columns = Math.min(4, Math.ceil((idx+1)/12)); // 12 lignes max
     cat.number_of_lines = Math.max(cat.number_of_lines||8, Math.ceil((idx+1)/(cat.number_of_columns||4)));
   });
   // Familles et groupes vidés par les modifications
@@ -1207,6 +1330,11 @@ function preflight(kind){
   if(i.tva) log(kind==='edit' ? `${i.tva} article(s) avec une TVA hors 5,5/10/20 : taux conservé s'il existe dans le JSON d'origine, sinon 20 %.`
     : `${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
   if(i.zero) log(`${i.zero} article(s) à prix 0 €.`,'w');
+  // TVA qui sera forcée à 20 % : on demande confirmation (risque fiscal)
+  const pcts = new Set(kind==='edit' ? (state.edit.original.taxes||[]).map(t=>t.percentage) : []);
+  const forced = kind==='json' || kind==='edit'
+    ? state.rows.filter(r=>[r.tva, r.price2!=null ? r.tva2 : null].some(v=>v!=null && !tvaOk(v) && !pcts.has(cents(v)))).length : 0;
+  if(forced && !confirm(`${forced} article(s) ont une TVA hors 5,5 / 10 / 20 %${kind==='edit' ? " absente du JSON d'origine" : ''} : ils seront exportés en TVA 20 %.\n\nExporter quand même ?`)) return false;
   if(kind==='json' || kind==='edit'){
     if(kind==='json' && !$('f_name').value.trim()) log("Nom du commerce vide : le JSON utilisera « MON COMMERCE ».",'w');
     if(kind==='json' && $('siretTag').classList.contains('bad')) log('SIRET/SIREN invalide : vérifiez-le avant import dans Popina.','w');
