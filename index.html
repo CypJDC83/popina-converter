@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.3 – Field Tech by cyp</title>
+<title>POS Converter v5.4 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -103,7 +103,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.3</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.4</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -136,7 +136,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
   <div class="drop" id="drop">
     <div data-only="convert">Glissez ici votre fichier ou cliquez pour parcourir</div>
     <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b></small>
-    <div data-only="edit">Glissez ici le <b>JSON exporté depuis le Back-Office Popina</b> ou cliquez pour parcourir</div>
+    <div data-only="edit">Glissez ici le <b>JSON exporté depuis le Back-Office Popina</b> (ancien ou nouveau Back-Office) ou cliquez pour parcourir</div>
     <small data-only="edit">Seuls les articles, familles, groupes, listes et pôles sont modifiés : personnel, salles, paiements, menus, imprimantes… restent intacts.<br>
       Ensuite, utilisez les boutons <b>CSV</b> ci-dessous pour appliquer un CSV Popina (par ex. exporté ici puis retravaillé sous Excel).</small>
     <input type="file" id="file" accept=".csv,.json,.txt" style="display:none">
@@ -546,6 +546,49 @@ function parsePopinaJSON(obj){
   return { rows, lists, places: places.length ? places : null, etabFill };
 }
 
+/* ============ Nouveau Back-Office Popina : { date, changes:[{action:'UPSERT', id, type, data}] } ============ */
+const isBO = obj => !!obj && Array.isArray(obj.changes) && obj.changes.some(c=>c && c.type && c.data);
+const boAll = (changes, type) => changes.filter(c=>c && c.type===type && c.action==='UPSERT' && c.data).map(c=>c.data);
+const multiMap = (arr, k, v) => { const m = new Map(); arr.forEach(x=>{ if(!m.has(x[k])) m.set(x[k], []); m.get(x[k]).push(v ? x[v] : x); }); return m; };
+// Arbre des boutons : racine (Carte) → groupes → familles → produits. Clé d'un dossier : « groupe|famille »
+function boTree(changes){
+  const groups = boAll(changes,'buttonGroup'), byId = new Map(groups.map(g=>[g.id,g])), root = groups.find(g=>g.isRoot);
+  const folders = [], prodFolders = new Map();
+  const walk = (g, path) => {
+    const groupe = path[0] || g.name, category = path[path.length-1] || g.name, f = {g, key:groupe+'|'+category, groupe, category, depth:path.length};
+    folders.push(f);
+    (g.buttons||[]).forEach(b=>{
+      if(b.type==='product'){ if(!prodFolders.has(b.objectId)) prodFolders.set(b.objectId, []); prodFolders.get(b.objectId).push(f); }
+      else if(b.type==='buttonGroup'){ const c = byId.get(b.objectId); if(c && c!==g && !c.isRoot && c.layout!=='SelectionFolder' && path.length<4) walk(c, [...path, c.name]); }
+    });
+  };
+  if(root) walk(root, []);
+  return { root, folders, prodFolders };
+}
+const HORS_CARTE = '(hors carte)'; // produit présent dans le BO mais sur aucun bouton (ex. seulement dans un menu)
+function parseBO(obj){
+  const L = t => boAll(obj.changes, t);
+  const tax = {}; L('tax').forEach(t=>tax[t.id] = (t.rate??2000)/100);
+  const pricing = L('pricing'), normalId = (pricing.find(p=>p.type==='normal')||{}).id, takeId = (pricing.find(p=>p.type==='takeOut')||{}).id;
+  const prices = multiMap(L('price'), 'productId');
+  const lists = L('modifierGroup').map(g=>({ id:g.id, name:g.name, mandatory:!!g.required, multiple:(g.maxSelect||1)>1,
+    options: L('modifier').filter(m=>m.groupId===g.id).sort((a,b)=>(a.index||0)-(b.index||0)).map(m=>({name:m.name, price:(m.price||0)/100})) }));
+  const listOf = multiMap(L('modifierGroupProductLink'), 'productId', 'modifierGroupId');
+  const places = L('preparationStation').map(s=>({id:s.id, name:s.name, extra:{}}));
+  const placeOf = multiMap(L('prepaStationProductLink'), 'productId', 'stationId');
+  const { prodFolders } = boTree(obj.changes);
+  const rows = L('product').filter(p=>p.name).map(p=>{
+    const pr = prices.get(p.id)||[], a = pr.find(x=>x.pricingId===normalId) || pr.find(x=>x.pricingId!==takeId), b = takeId && pr.find(x=>x.pricingId===takeId);
+    const f = (prodFolders.get(p.id)||[])[0] || {groupe:HORS_CARTE, category:HORS_CARTE};
+    const r = { groupe:f.groupe, category:f.category, name:clean(p.name),
+      price: a ? a.amount/100 : 0, tva: a ? (tax[a.taxId]??20) : 20,
+      price2: b ? b.amount/100 : null, tva2: b ? (tax[b.taxId]??20) : null,
+      listIds:[...new Set(listOf.get(p.id)||[])], placeIds:[...new Set(placeOf.get(p.id)||[])], id:p.id };
+    r.orig = origOf(r); return r;
+  });
+  return { rows, lists, places };
+}
+
 /* ============ Import ============ */
 function load(result, source, name){
   if(state.rows.length) snapshot('import de '+name);
@@ -575,12 +618,15 @@ function handleText(text, name){
         if(/^(G;DESC;|A;TYPE;|D;TYPE;)/m.test(t)) throw new Error('fichier Nova : utilisez le mode « Créer une carte »');
         return mergeCSV(parsePopinaCSV(text).rows, name, csvReplace);
       }
-      const obj = JSON.parse(t), res = parsePopinaJSON(obj);
+      const obj = JSON.parse(t), bo = isBO(obj), res = bo ? parseBO(obj) : parsePopinaJSON(obj);
       delete res.etabFill;
-      res.edit = { original: obj, origIds: [...new Set(res.rows.map(r=>r.id))] };
-      return load(res, 'JSON Popina (édition)', name);
+      res.edit = { original: obj, format: bo ? 'bo' : 'legacy', origIds: [...new Set(res.rows.map(r=>r.id))] };
+      return load(res, bo ? 'JSON nouveau Back-Office (édition)' : 'JSON Popina (édition)', name);
     }
-    if(name.toLowerCase().endsWith('.json') || t.startsWith('{')) return load(parsePopinaJSON(JSON.parse(t)), 'JSON Popina', name);
+    if(name.toLowerCase().endsWith('.json') || t.startsWith('{')){
+      const obj = JSON.parse(t);
+      return isBO(obj) ? load(parseBO(obj), 'JSON nouveau Back-Office', name) : load(parsePopinaJSON(obj), 'JSON Popina', name);
+    }
     if(/^(G;DESC;|A;TYPE;|D;TYPE;)/m.test(t)) return load(parseNova(text), 'Nova', name);
     load(parsePopinaCSV(text), 'CSV Popina', name);
   }catch(err){ console.error(err); log('Erreur : '+err.message,'e'); toast('Erreur de lecture : '+err.message,'err'); }
@@ -819,7 +865,7 @@ function renderDiff(){
     out.push(['mod','Modifié', r.name, ch.join(' · ')]);
   });
   const ids = new Set(state.rows.map(r=>r.id)), orig = new Set(state.edit.origIds);
-  (state.edit.original.items||[]).forEach(i=>{ if(orig.has(i.client_id) && !ids.has(i.client_id)) out.push(['del','Supprimé', i.name, '']); });
+  editOrigProducts().forEach(([id, name])=>{ if(orig.has(id) && !ids.has(id)) out.push(['del','Supprimé', name, '']); });
   const MAX = 500;
   $('diffList').innerHTML = out.length
     ? out.slice(0,MAX).map(([c,k,n,d])=>`<div class="d-${c}"><span class="k">${k}</span><b>${esc(n)}</b> ${d}</div>`).join('')
@@ -1306,6 +1352,158 @@ function buildEditJSON(){
   return { json: JSON.stringify(o,null,2), st, warn, info };
 }
 
+/* Mode édition, nouveau Back-Office : même principe, on repart du fichier d'origine et on ne touche qu'aux entrées concernées */
+function buildBOJSON(){
+  const o = JSON.parse(JSON.stringify(state.edit.original)), ch = o.changes;
+  const origIds = new Set(state.edit.origIds), warn = [], info = [], st = { added:0, changed:0, deleted:0 };
+  const L = t => boAll(ch, t), up = (type, data) => { ch.push({action:'UPSERT', id:data.id, data, type}); return data; };
+  let removed = 0;
+  const drop = test => { for(let i=ch.length-1; i>=0; i--) if(ch[i] && ch[i].data && test(ch[i])){ ch.splice(i,1); removed++; } };
+
+  // TVA (taux du fichier, même atypiques) et tarifs « Normal » / « A emporter »
+  const taxes = L('tax'); let badTax = 0;
+  const taxFor = v => {
+    const rate = cents(num(v)), t = taxes.find(t=>t.rate===rate); if(t) return t.id;
+    if(tvaOk(v)){ const n = taxes[taxes.push(up('tax', {id:uuid(), name:'TVA '+String(num(v)).replace('.',',')+'%', rate}))-1]; return n.id; }
+    badTax++; return taxFor(20);
+  };
+  const pricingId = (type, name) => (L('pricing').find(p=>p.type===type) || up('pricing', {id:uuid(), enabled:true, name, type})).id;
+  const normalId = pricingId('normal', 'Normal'), takeOrig = (L('pricing').find(p=>p.type==='takeOut')||{}).id;
+  let takeNew; const takeId = () => takeOrig || takeNew || (takeNew = pricingId('takeOut', 'A emporter'));
+  const prices = L('price');
+  const addPrice = (pid, amount, tva, prc) => prices.push(up('price', {id:uuid(), amount:cents(amount), productId:pid, taxId:taxFor(tva), pricingId:prc}));
+  const syncLinks = (type, field, pid, wanted) => {
+    const want = new Set(wanted);
+    drop(c=>c.type===type && c.data.productId===pid && !want.has(c.data[field]));
+    const have = new Set(L(type).filter(d=>d.productId===pid).map(d=>d[field]));
+    want.forEach(x=>{ if(!have.has(x)) up(type, {id:uuid(), [field]:x, productId:pid}); });
+  };
+
+  // Pôles de préparation et listes (modifierGroup)
+  const stations = L('preparationStation'), keepSt = new Set(state.places.map(p=>p.id));
+  state.places.forEach(p=>{
+    const s = stations.find(s=>s.id===p.id);
+    if(s){ if(s.name!==p.name) s.name = p.name; }
+    else { up('preparationStation', {id:p.id, name:p.name, printerId:null, recapPrepa:false, printUnknownItems:false, mainStationId:null, relatedStations:[]}); info.push(`Nouveau pôle « ${p.name} »`); }
+  });
+  const goneSt = new Set(stations.filter(s=>!keepSt.has(s.id)).map(s=>s.id));
+  if(goneSt.size) drop(c=>(c.type==='preparationStation' && goneSt.has(c.data.id)) || (c.type==='prepaStationProductLink' && goneSt.has(c.data.stationId)));
+  const listIds = new Set();
+  L('modifierGroup').forEach(g=>{
+    listIds.add(g.id); const l = state.lists.find(l=>l.id===g.id); if(!l) return;
+    if(g.name!==l.name) g.name = l.name;
+    if(!!g.required!==l.mandatory) g.required = l.mandatory;
+    if(((g.maxSelect||1)>1)!==l.multiple) g.maxSelect = l.multiple ? Math.max(2, l.options.length) : 1;
+  });
+
+  // Produits
+  const prodById = new Map(L('product').map(p=>[p.id,p]));
+  const kept = new Set(), fresh = new Set(), rowItem = new Map();
+  state.rows.forEach(r=>{
+    if(!r.name) return;
+    const p = r.orig && origIds.has(r.id) && !kept.has(r.id) ? prodById.get(r.id) : null;
+    if(!p){ // nouvel article
+      const n = up('product', {id:uuid(), barCode:'', isCustomPrice:false, isPricedByWeight:false, name:r.name, prepStationName:null, layoutButtonName:null, stepIndex:-1, sku:null, plu:null, image:null, tare:null});
+      st.added++; fresh.add(n.id); rowItem.set(r, n.id);
+      addPrice(n.id, r.price, r.tva, normalId);
+      if(r.price2!=null) addPrice(n.id, r.price2, r.tva2??r.tva, takeId());
+      syncLinks('modifierGroupProductLink', 'modifierGroupId', n.id, r.listIds.filter(x=>listIds.has(x)));
+      syncLinks('prepaStationProductLink', 'stationId', n.id, (r.placeIds||[]).filter(x=>keepSt.has(x)));
+      return;
+    }
+    kept.add(p.id); rowItem.set(r, p.id);
+    if(!rowChanged(r)) return;
+    st.changed++; const og = r.orig;
+    if(FIELD_DIFF.name(r,og)) p.name = r.name;
+    const a = prices.find(x=>x.productId===p.id && x.pricingId===normalId) || prices.find(x=>x.productId===p.id && x.pricingId!==takeOrig);
+    if(!a) addPrice(p.id, r.price, r.tva, normalId);
+    else { if(FIELD_DIFF.price(r,og)) a.amount = cents(r.price); if(FIELD_DIFF.tva(r,og)) a.taxId = taxFor(r.tva); }
+    const tk = takeOrig && prices.find(x=>x.productId===p.id && x.pricingId===takeOrig);
+    if(r.price2==null){ if(tk) drop(c=>c.type==='price' && c.data.id===tk.id); }
+    else if(!tk) addPrice(p.id, r.price2, r.tva2??r.tva, takeId());
+    else { if(FIELD_DIFF.price2(r,og)) tk.amount = cents(r.price2); if(FIELD_DIFF.tva2(r,og)) tk.taxId = taxFor(r.tva2??r.tva); }
+    if(r.listIds.join('|')!==og.lists) syncLinks('modifierGroupProductLink', 'modifierGroupId', p.id, r.listIds.filter(x=>listIds.has(x)));
+    if([...(r.placeIds||[])].sort().join('|')!==og.places) syncLinks('prepaStationProductLink', 'stationId', p.id, (r.placeIds||[]).filter(x=>keepSt.has(x)));
+  });
+
+  // Produits supprimés (avec leurs prix, liens et boutons de menu)
+  const del = new Set([...origIds].filter(id=>!kept.has(id)));
+  st.deleted = del.size;
+  if(del.size){
+    const inMeal = L('mealButton').filter(m=>del.has(m.productId)).length;
+    if(inMeal) warn.push(`${inMeal} choix de menu pointaient vers des articles supprimés : retirés du menu.`);
+    drop(c=>(c.type==='product' && del.has(c.data.id))
+      || (del.has(c.data.productId) && ['price','modifierGroupProductLink','prepaStationProductLink','mealButton'].includes(c.type)));
+  }
+
+  // Boutons de la carte : renommages en bloc, déplacements, nouveaux dossiers
+  const rowKey = r => r.groupe+'|'+r.category;
+  const hadProducts = new Set(L('buttonGroup').filter(g=>(g.buttons||[]).some(b=>b.type==='product')).map(g=>g.id));
+  L('buttonGroup').forEach(g=>{ if(g.buttons) g.buttons = g.buttons.filter(b=>!(b.type==='product' && del.has(b.objectId))); });
+  let T = boTree(ch);
+  const byOldGroup = new Map();
+  state.rows.forEach(r=>{ if(r.orig && kept.has(r.id)) (byOldGroup.get(r.orig.groupe) || byOldGroup.set(r.orig.groupe, []).get(r.orig.groupe)).push(r); });
+  byOldGroup.forEach((rs, old)=>{
+    const g = rs[0].groupe, f = T.folders.find(x=>x.depth===1 && x.g.name===old);
+    if(!f || g===old || g===HORS_CARTE || T.folders.some(x=>x.depth===1 && x.g.name===g) || rs.some(r=>r.groupe!==g) || state.rows.some(r=>!r.orig && r.groupe===old)) return;
+    f.g.name = g; info.push(`Groupe renommé : « ${old} » → « ${g} »`);
+  });
+  T = boTree(ch);
+  const rowOf = new Map([...rowItem].map(([r,id])=>[id,r]));
+  T.folders.filter(f=>f.depth>=2).forEach(f=>{
+    const rs = (f.g.buttons||[]).filter(b=>b.type==='product').map(b=>rowOf.get(b.objectId));
+    if(!rs.length || rs.some(r=>!r)) return;
+    const k = rowKey(rs[0]);
+    if(k===f.key || rs.some(r=>rowKey(r)!==k) || rs[0].groupe!==f.groupe || T.folders.some(x=>x.key===k)) return;
+    info.push(`Famille renommée : « ${f.g.name} » → « ${rs[0].category} »`); f.g.name = rs[0].category;
+  });
+  T = boTree(ch);
+  const addButton = (g, type, objectId) => {
+    g.buttons = g.buttons || [];
+    const used = new Set(g.buttons.map(b=>b.index)); let index = 0; while(used.has(index)) index++;
+    g.buttons.push({id:uuid(), type, objectId, index, color:null, brightness:'normal', fontSize:17, icon:'none'});
+    const cols = g.cols || 2; if(Math.ceil((index+1)/cols) > (g.rows||8)) g.rows = Math.ceil((index+1)/cols);
+  };
+  const newFolder = (parent, name) => { const g = up('buttonGroup', {id:uuid(), name, isRoot:false, layout:'Folder', rows:8, cols:2, buttons:[]}); addButton(parent, 'buttonGroup', g.id); return g; };
+  const folderFor = r => {
+    const hit = T.folders.filter(f=>f.key===rowKey(r)).sort((a,b)=>b.depth-a.depth)[0];
+    if(hit) return hit.g;
+    if(!T.root) T.root = up('buttonGroup', {id:uuid(), name:'Carte', isRoot:true, layout:'3-Cols', rows:10, cols:1, buttons:[]});
+    let gf = T.folders.find(f=>f.depth===1 && f.g.name===r.groupe);
+    if(!gf){ gf = {g:newFolder(T.root, r.groupe), key:r.groupe+'|'+r.groupe, groupe:r.groupe, category:r.groupe, depth:1}; T.folders.push(gf); info.push(`Nouveau groupe « ${r.groupe} »`); }
+    if(r.category===r.groupe) return gf.g;
+    const g = newFolder(gf.g, r.category);
+    T.folders.push({g, key:rowKey(r), groupe:r.groupe, category:r.category, depth:2}); info.push(`Nouvelle famille « ${r.groupe} › ${r.category} »`);
+    return g;
+  };
+  const removeButtons = pid => T.folders.forEach(f=>{ if(f.g.buttons) f.g.buttons = f.g.buttons.filter(b=>!(b.type==='product' && b.objectId===pid)); });
+  state.rows.forEach(r=>{
+    const id = rowItem.get(r); if(!id) return;
+    const pf = T.prodFolders.get(id) || [];
+    if(r.groupe===HORS_CARTE){ if(pf.length) removeButtons(id); return; }
+    if(pf.some(f=>f.key===rowKey(r))) return;
+    removeButtons(id); addButton(folderFor(r), 'product', id);
+  });
+  // Dossiers vidés par les changements : retirés (et leur bouton dans le dossier parent)
+  const wasFull = new Set(hadProducts), goneF = new Set();
+  for(let pass=0; pass<5; pass++) L('buttonGroup').forEach(g=>{
+    if(g.isRoot || goneF.has(g.id) || (g.buttons||[]).length || !wasFull.has(g.id)) return;
+    goneF.add(g.id); info.push(`Dossier vide retiré : « ${g.name} »`);
+    L('buttonGroup').forEach(p=>{ if((p.buttons||[]).some(b=>b.objectId===g.id)){ p.buttons = p.buttons.filter(b=>b.objectId!==g.id); wasFull.add(p.id); } });
+  });
+  if(goneF.size) drop(c=>c.type==='buttonGroup' && goneF.has(c.data.id));
+
+  if(removed) warn.push(`${removed} entrée(s) retirée(s) du fichier (articles supprimés, prix emporter, affectations, dossiers vides…). Si l'import du Back-Office ne fait qu'ajouter / mettre à jour, ces retraits ne seront pas appliqués : vérifiez sur un établissement de test.`);
+  if(badTax) warn.push(`${badTax} TVA absente(s) du fichier d'origine et hors 5,5/10/20 : exportée(s) en TVA 20 %.`);
+  o.date = new Date().toISOString().replace(/:/g,'');
+  return { json: JSON.stringify(o), st, warn, info };
+}
+// Nom de l'établissement et taux de TVA du fichier en cours de modification (ancien ou nouveau format)
+const editName = () => state.edit.format==='bo' ? (boAll(state.edit.original.changes,'locationSettings')[0]||{}).establishmentName || '' : state.edit.original.name;
+const editTaxPcts = () => state.edit.format==='bo' ? boAll(state.edit.original.changes,'tax').map(t=>t.rate) : (state.edit.original.taxes||[]).map(t=>t.percentage);
+const editOrigProducts = () => state.edit.format==='bo'
+  ? boAll(state.edit.original.changes,'product').map(p=>[p.id, p.name]) : (state.edit.original.items||[]).map(i=>[i.client_id, i.name]);
+
 const q2 = s => '"'+String(s).replace(/"/g,'""')+'"';
 function buildCSV(){
   // mode édition : colonne ID pour retrouver chaque article à la réimportation du CSV
@@ -1331,7 +1529,7 @@ function preflight(kind){
     : `${i.tva} article(s) avec une TVA hors 5,5/10/20 : ils seront exportés en TVA 20 % côté JSON.`,'w');
   if(i.zero) log(`${i.zero} article(s) à prix 0 €.`,'w');
   // TVA qui sera forcée à 20 % : on demande confirmation (risque fiscal)
-  const pcts = new Set(kind==='edit' ? (state.edit.original.taxes||[]).map(t=>t.percentage) : []);
+  const pcts = new Set(kind==='edit' ? editTaxPcts() : []);
   const forced = kind==='json' || kind==='edit'
     ? state.rows.filter(r=>[r.tva, r.price2!=null ? r.tva2 : null].some(v=>v!=null && !tvaOk(v) && !pcts.has(cents(v)))).length : 0;
   if(forced && !confirm(`${forced} article(s) ont une TVA hors 5,5 / 10 / 20 %${kind==='edit' ? " absente du JSON d'origine" : ''} : ils seront exportés en TVA 20 %.\n\nExporter quand même ?`)) return false;
@@ -1353,11 +1551,11 @@ function preflight(kind){
 document.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>{
   const kind = b.dataset.exp;
   if(!preflight(kind)) return;
-  const base = slug(state.edit ? state.edit.original.name : etab().name) || slug(state.fileName.replace(/\.[^.]+$/,'')) || 'carte';
+  const base = slug(state.edit ? editName() : etab().name) || slug(state.fileName.replace(/\.[^.]+$/,'')) || 'carte';
   if(kind==='edit'){
-    const r = buildEditJSON();
+    const bo = state.edit.format==='bo', r = bo ? buildBOJSON() : buildEditJSON();
     r.info.forEach(m=>log(m)); r.warn.forEach(m=>log(m,'w'));
-    download(r.json, base+'_popina_modifie.json','application/json');
+    download(r.json, base+(bo ? '_bo_modifie.json' : '_popina_modifie.json'),'application/json');
     log(`Export JSON modifié : ${r.st.changed} modifié(s), ${r.st.added} ajouté(s), ${r.st.deleted} supprimé(s).`);
     toast(`JSON modifié : ${r.st.changed} modif., ${r.st.added} ajout(s), ${r.st.deleted} suppr.`, r.warn.length ? '' : 'ok');
   }
