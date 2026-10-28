@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.4 – Field Tech by cyp</title>
+<title>POS Converter v5.4.1 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -103,7 +103,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.4</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.4.1</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -1465,14 +1465,14 @@ function buildBOJSON(){
     const cols = g.cols || 2; if(Math.ceil((index+1)/cols) > (g.rows||8)) g.rows = Math.ceil((index+1)/cols);
   };
   const newFolder = (parent, name) => { const g = up('buttonGroup', {id:uuid(), name, isRoot:false, layout:'Folder', rows:8, cols:2, buttons:[]}); addButton(parent, 'buttonGroup', g.id); return g; };
+  // Le BO impose : racine → catégorie (dossiers uniquement) → sous-catégorie (articles uniquement)
   const folderFor = r => {
-    const hit = T.folders.filter(f=>f.key===rowKey(r)).sort((a,b)=>b.depth-a.depth)[0];
+    const hit = T.folders.find(f=>f.key===rowKey(r) && f.depth===2);
     if(hit) return hit.g;
     if(!T.root) T.root = up('buttonGroup', {id:uuid(), name:'Carte', isRoot:true, layout:'3-Cols', rows:10, cols:1, buttons:[]});
     let gf = T.folders.find(f=>f.depth===1 && f.g.name===r.groupe);
     if(!gf){ gf = {g:newFolder(T.root, r.groupe), key:r.groupe+'|'+r.groupe, groupe:r.groupe, category:r.groupe, depth:1}; T.folders.push(gf); info.push(`Nouveau groupe « ${r.groupe} »`); }
-    if(r.category===r.groupe) return gf.g;
-    const g = newFolder(gf.g, r.category);
+    const g = newFolder(gf.g, r.category); // même si la famille porte le nom du groupe (ex. Desserts › Desserts)
     T.folders.push({g, key:rowKey(r), groupe:r.groupe, category:r.category, depth:2}); info.push(`Nouvelle famille « ${r.groupe} › ${r.category} »`);
     return g;
   };
@@ -1484,6 +1484,19 @@ function buildBOJSON(){
     if(pf.some(f=>f.key===rowKey(r))) return;
     removeButtons(id); addButton(folderFor(r), 'product', id);
   });
+  // Réparation : articles posés directement dans une catégorie → rangés dans une sous-catégorie du même nom (bouton conservé)
+  T = boTree(ch);
+  const gById = new Map(L('buttonGroup').map(g=>[g.id,g]));
+  T.folders.filter(f=>f.depth===1 && (f.g.buttons||[]).some(b=>b.type==='product')).forEach(f=>{
+    const prods = f.g.buttons.filter(b=>b.type==='product');
+    f.g.buttons = f.g.buttons.filter(b=>b.type!=='product');
+    const sub = f.g.buttons.filter(b=>b.type==='buttonGroup').map(b=>gById.get(b.objectId)).find(k=>k && k.name===f.g.name) || newFolder(f.g, f.g.name);
+    prods.forEach(b=>{ addButton(sub, 'product', b.objectId); Object.assign(sub.buttons[sub.buttons.length-1], {id:b.id, color:b.color, brightness:b.brightness, fontSize:b.fontSize, icon:b.icon}); });
+    info.push(`Structure corrigée : articles du groupe « ${f.g.name} » rangés dans la sous-famille « ${f.g.name} »`);
+  });
+  T = boTree(ch);
+  const deep = T.folders.filter(f=>f.depth>=2 && (f.g.buttons||[]).some(b=>b.type==='buttonGroup'));
+  if(deep.length) warn.push(`Dossier(s) sur plus de 2 niveaux, refusés par le Back-Office : ${deep.map(f=>f.g.name).join(', ')}. À réorganiser dans le Back-Office.`);
   // Dossiers vidés par les changements : retirés (et leur bouton dans le dossier parent)
   const wasFull = new Set(hadProducts), goneF = new Set();
   for(let pass=0; pass<5; pass++) L('buttonGroup').forEach(g=>{
