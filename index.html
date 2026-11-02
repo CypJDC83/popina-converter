@@ -1,9 +1,16 @@
 <!DOCTYPE html>
+<!--
+  POS Converter — © 2026 cyp. Tous droits réservés.
+  Toute reproduction, modification ou redistribution, totale ou partielle, sans autorisation écrite de l'auteur est interdite.
+  Voir le fichier LICENSE.
+-->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.5 – Field Tech by cyp</title>
+<meta name="author" content="cyp">
+<meta name="copyright" content="© 2026 cyp. Tous droits réservés.">
+<title>POS Converter v5.6 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -81,6 +88,7 @@ details.card>summary{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .resume{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.7rem;padding:.6rem .8rem;border:1px solid var(--accent);border-radius:8px;background:#0ea5e914;font-size:.78rem}
 .resume span{flex:1;min-width:200px}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.foot{max-width:1180px;margin:1.5rem auto 0;padding-top:.8rem;border-top:1px solid var(--line);color:var(--muted);font-size:.7rem;text-align:center}
 .modes{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.1rem}
 .mode{flex:1;min-width:220px;text-align:left;background:var(--panel);color:var(--muted);border:1px solid var(--line);padding:.7rem .9rem;font-size:.85rem}
 .mode .sub{display:block;font-weight:400;margin-top:.15rem}
@@ -105,7 +113,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.5</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.6</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -163,7 +171,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
     <textarea id="flyerText" rows="12" aria-label="Texte du flyer" placeholder="Le texte lu sur le flyer apparaît ici (plusieurs photos s'ajoutent à la suite).&#10;Corrigez-le si besoin, supprimez les lignes inutiles… ou collez directement le texte d'une carte."></textarea>
     <div class="toolbar" style="margin-top:.5rem;margin-bottom:0">
       <button class="b-primary" id="btnFlyerParse">Créer la carte à partir de ce texte</button>
-      <span class="sub">Une ligne avec un prix = un article · une ligne en MAJUSCULES sans prix = une famille · le reste est ignoré.</span>
+      <span class="sub">Une ligne avec un prix = un article · une ligne en MAJUSCULES ou marquée « ## » (gros caractères) = une famille · le reste est ignoré.</span>
     </div>
     <input type="file" id="flyerFile" accept="image/*,.pdf,application/pdf" multiple style="display:none">
   </div>
@@ -269,6 +277,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 </div>
 
 </div>
+<footer class="foot">© 2026 cyp — POS Converter. Tous droits réservés. Reproduction, copie ou redistribution interdites sans autorisation écrite de l'auteur.</footer>
 <div id="toast"></div>
 
 <script>
@@ -727,12 +736,19 @@ async function ocrAll(sources, set){
     const out = [];
     for(cur=0; cur<sources.length; cur++){
       const { data } = await worker.recognize(sources[cur]);
-      // mots positionnés → même découpage en colonnes que les PDF (y inversé : plus haut = plus grand)
-      const words = (data.words||[]).filter(w=>w.text.trim() && w.confidence>20)
-        .map(w=>({s:w.text, x:w.bbox.x0, y:-w.bbox.y1, w:w.bbox.x1-w.bbox.x0, h:w.bbox.y1-w.bbox.y0}));
-      out.push(words.length ? layoutLines(words, sources[cur].width).join('\n') : data.text);
+      // lignes de Tesseract, coupées aux grands blancs (colonnes côte à côte), puis même mise en colonnes que les PDF
+      // (hauteur de la ligne entière : celle des mots varie trop avec les petites lettres ; y inversé : plus haut = plus grand)
+      const items = [];
+      (data.lines||[]).forEach(l=>{
+        const ws = (l.words||[]).filter(w=>w.text.trim() && w.confidence>20).sort((a,b)=>a.bbox.x0-b.bbox.x0), lh = l.bbox.y1-l.bbox.y0;
+        let part = [];
+        const flush = () => { if(part.length) items.push({ s:part.map(w=>w.text).join(' '), x:part[0].bbox.x0, y:-l.bbox.y1, w:part[part.length-1].bbox.x1-part[0].bbox.x0, h:lh }); part = []; };
+        ws.forEach((w,k)=>{ if(k && w.bbox.x0-ws[k-1].bbox.x1 > lh*1.2) flush(); part.push(w); });
+        flush();
+      });
+      out.push(items.length ? layoutLines(items, sources[cur].width).join('\n') : data.text);
     }
-    return out.join('\n\n');
+    return out; // un texte par image
   }
   finally{ await worker.terminate(); }
 }
@@ -741,28 +757,64 @@ const pdfLines = (items, pageWidth) => layoutLines(items.filter(i=>i.str && i.st
 // Éléments de texte positionnés ({s, x, y, w, h}, y vers le haut) → lignes, colonne par colonne
 function layoutLines(its, pageWidth){
   if(!its.length) return [];
-  const wide = i => i.w > pageWidth*0.45;
-  // gouttière = bande verticale traversée par presque aucun texte (un titre qui déborde ne la masque pas)
-  const cover = new Uint16Array(Math.ceil(pageWidth)+2), tol = Math.max(1, Math.floor(its.length*0.03));
-  its.filter(i=>!wide(i)).forEach(i=>{ for(let x=Math.max(0,Math.floor(i.x)); x<Math.min(cover.length, Math.ceil(i.x+i.w)); x++) cover[x]++; });
-  const minX = Math.max(0, Math.floor(Math.min(...its.map(i=>i.x)))), maxX = Math.min(cover.length-1, Math.ceil(Math.max(...its.map(i=>i.x+i.w))));
-  const cuts = []; let run = 0;
-  const minGap = Math.max(12, pageWidth*0.03);
-  for(let x=minX; x<=maxX; x++){ if(cover[x]<=tol) run++; else { if(run>=minGap) cuts.push(x-run/2); run = 0; } }
-  let cols = [[]].concat(cuts.map(()=>[]));
-  const titles = [];
-  its.forEach(i=>{ if(wide(i) || cuts.some(c=>i.x < c && i.x+i.w > c)) titles.push(i); else cols[cuts.filter(c=>i.x+i.w/2 > c).length].push(i); });
-  // une « colonne » qui ne contient que des prix appartient à la colonne de gauche (noms à gauche, prix alignés à droite)
-  const isPrice = s => /^\s*(€|eur(os?)?|\d{1,3}([.,]\d{1,2})?)\s*$/i.test(s) || (findPrices(s).length>0 && !/[a-zà-ÿ]{3}/i.test(s.replace(/eur(os?)?/i,'')));
-  cols = cols.filter(c=>c.length).reduce((acc, c)=>{
-    if(acc.length && c.filter(i=>isPrice(i.s)).length >= c.length*0.7) acc[acc.length-1].push(...c); else acc.push(c);
-    return acc; }, []);
-  const toLines = arr => {
-    const sorted = arr.slice().sort((a,b)=>b.y-a.y || a.x-b.x), lines = [];
-    sorted.forEach(i=>{ const l = lines.find(l=>Math.abs(l.y-i.y) < Math.max(l.h, i.h)*0.5); if(l){ l.items.push(i); } else lines.push({y:i.y, h:i.h, items:[i]}); });
-    return lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim());
-  };
-  return [...toLines(titles), ...cols.flatMap(c=>['', ...toLines(c)])];
+  // 1. lignes visuelles (même hauteur)
+  const rows = [];
+  its.slice().sort((a,b)=>b.y-a.y || a.x-b.x).forEach(i=>{
+    const r = rows.find(r=>Math.abs(r.y-i.y) < Math.max(r.h, i.h)*0.5);
+    if(r) r.items.push(i); else rows.push({y:i.y, h:i.h, items:[i]});
+  });
+  // 2. morceaux de ligne séparés par un grand blanc ; un morceau sans mot (prix, millésime, pointillés, « 75cl ») rejoint celui de gauche
+  const wordy = s => /[a-zà-ÿ]{2}/i.test(s.replace(/\d+(?:[.,]\d+)?\s*(?:cl|ml|l)\b|\beur(?:os?)?\b/gi,''));
+  const join = arr => arr.reduce((t,i,k)=> !k ? i.s : i.x-(arr[k-1].x+arr[k-1].w) <= i.h*0.12 ? t+i.s : t+' '+i.s, ''); // lettres collées = un seul mot (« Chouff e »)
+  const chunks = [];
+  rows.forEach(r=>{
+    const s = r.items.sort((a,b)=>a.x-b.x); let cur = [s[0]];
+    const flush = () => {
+      const c = {y:r.y, x0:cur[0].x, x1:Math.max(...cur.map(i=>i.x+i.w)), h:Math.max(...cur.map(i=>i.h)), s:join(cur)}, prev = chunks[chunks.length-1];
+      if(prev && prev.y===r.y && !wordy(c.s)){ prev.s += ' '+c.s; prev.x1 = c.x1; } else chunks.push(c);
+    };
+    for(let k=1; k<s.length; k++){
+      if(s[k].x-(s[k-1].x+s[k-1].w) > Math.max(r.h, s[k].h)*1.2){ flush(); cur = [s[k]]; } else cur.push(s[k]);
+    }
+    flush();
+  });
+  // 3. colonnes = positions où démarrent régulièrement des noms ; les plus fréquentes d'abord
+  //    (des titres centrés à des positions voisines ne doivent pas masquer une vraie colonne)
+  const clusters = [];
+  chunks.filter(c=>wordy(c.s)).map(c=>c.x0).sort((a,b)=>a-b).forEach(x=>{
+    const c = clusters[clusters.length-1];
+    if(c && x-c.last <= pageWidth*0.03){ c.n++; c.last = x; } else clusters.push({x, last:x, n:1});
+  });
+  const best = Math.max(0, ...clusters.map(c=>c.n)), tol = pageWidth*0.02;
+  const cand = clusters.filter(c=>c.n >= Math.max(3, best*0.15)).sort((a,b)=>b.n-a.n)
+    .reduce((a,c)=> a.every(x=>Math.abs(c.x-x) >= pageWidth*0.2) ? [...a, c.x] : a, []).sort((a,b)=>a-b);
+  // une vraie colonne n'est presque jamais traversée par les lignes de la colonne de gauche (sinon : titres centrés, retraits…)
+  const colX = [];
+  cand.forEach(x=>{
+    const p = colX[colX.length-1]; if(p===undefined) return colX.push(x);
+    const own = chunks.filter(c=>Math.abs(c.x0-p) <= tol*1.5);
+    if(!own.length || own.filter(c=>c.x1 > x+tol).length / own.length <= 0.35) colX.push(x);
+  });
+  if(!colX.length) colX.push(Math.min(...chunks.map(c=>c.x0)));
+  // 4. lecture colonne par colonne, par bandes : un titre qui traverse les colonnes coupe la page en deux
+  //    (« ## » devant un texte nettement plus gros que la moyenne : sans doute un titre de famille)
+  const hs = chunks.filter(c=>wordy(c.s)).map(c=>c.h).sort((a,b)=>a-b), medH = hs[Math.floor(hs.length/2)] || 0;
+  const txt = c => (c.h >= medH*1.3 && wordy(c.s) && !findPrices(c.s).length ? '## ' : '') + c.s.replace(/\s+/g,' ').trim();
+  const out = []; let band = colX.map(()=>[]);
+  const flushBand = () => { band.forEach(col=>{ if(!col.length) return; out.push(''); col.forEach(c=>out.push(txt(c))); }); band = colX.map(()=>[]); };
+  const colOf = c => { let k = 0; colX.forEach((x,i)=>{ if(c.x0 >= x-tol) k = i; }); return k; };
+  const isTitle = new Set(chunks.filter(c=>{ const k = colOf(c); return k+1 < colX.length && c.x1 > colX[k+1]+tol; }));
+  // texte aligné sur une section centrée qui traverse les colonnes (ex. son titre, plus court) : fait partie de la section
+  for(let pass=0; pass<3 && isTitle.size; pass++) chunks.forEach(c=>{
+    if(isTitle.has(c) || colX.some(x=>Math.abs(c.x0-x) <= tol*2)) return;
+    if([...isTitle].some(t=>Math.abs(t.x0-c.x0) <= tol && Math.abs(t.y-c.y) <= Math.max(t.h, c.h)*4)) isTitle.add(c);
+  });
+  chunks.sort((a,b)=>b.y-a.y || a.x0-b.x0).forEach(c=>{
+    if(isTitle.has(c)){ flushBand(); out.push('', txt(c)); }
+    else band[colOf(c)].push(c);
+  });
+  flushBand();
+  return out;
 }
 async function readPDF(buf, set){
   set('Ouverture du PDF…');
@@ -774,11 +826,11 @@ async function readPDF(buf, set){
     const lines = pdfLines((await page.getTextContent()).items, vp1.width);
     if(lines.join('').replace(/\s/g,'').length > 30){ texts.push(lines.join('\n')); continue; }
     // page scannée (image sans texte) : on la dessine puis on la passe à l'OCR
-    const vp = page.getViewport({scale:2.5}), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+    const vp = page.getViewport({scale: Math.min(2.5, 2400/vp1.width)}), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
     await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise;
     texts.push(null); scans.push(c);
   }
-  if(scans.length){ const ocr = (await ocrAll(scans, set)).split('\n\n'); let k = 0; texts.forEach((t,i)=>{ if(t===null) texts[i] = ocr[k++] || ''; }); }
+  if(scans.length){ const ocr = await ocrAll(scans, set); let k = 0; texts.forEach((t,i)=>{ if(t===null) texts[i] = ocr[k++] || ''; }); }
   return texts.join('\n\n');
 }
 
@@ -791,48 +843,107 @@ function findPrices(line){
     const dec = m[2] || m[3] || '';
     out.push({ index:m.index, end:m.index+m[0].length, value:+m[1] + (dec ? +dec.padEnd(2,'0')/100 : 0) });
   }
-  if(!out.length){ const m = line.match(/(?:^|[\s.…·:_\-–—])(\d{1,3})\s*$/); if(m && /[a-zà-ÿ]{3}/i.test(line.slice(0, m.index))) out.push({ index:m.index+m[0].indexOf(m[1]), end:line.length, value:+m[1] }); }
+  if(!out.length){
+    const m = line.match(/(?:^|[\s.…·:_\-–—])(\d{1,3})\s*$/);
+    if(m && /[a-zà-ÿ]{3}/i.test(line.slice(0, m.index)) && !/(page|p\.|n°|no|num[ée]ro|tél|tel)\s*$/i.test(line.slice(0, m.index+m[0].indexOf(m[1]))))
+      out.push({ index:m.index+m[0].indexOf(m[1]), end:line.length, value:+m[1] });
+  }
   return out.filter(p=>p.value>0 && p.value<1000);
 }
-const cleanName = s => clean(String(s).replace(/[.…·_]{2,}/g,' ').replace(/^\s*\d{1,2}\s*[.)]\s+/,'').replace(/^[\s\-–—•*·>»|]+/,'').replace(/[\s\-–—:|/.,·•*(]+$/,'').replace(/\s{2,}/g,' '));
-const FLY_DRINK = /boisson|\bvins?\b|bi[eè]res?|pression|softs?\b|caf[eé]s?\b|\bth[eé]s?\b|infusion|cocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|\beaux?\b|\bjus\b|sirop|champagne|whisk|\brhums?\b|vodka|\bgin\b|ros[eé]s?\b|\brouges?\b|\bblancs?\b|bouteilles?|pichets?/i;
-const FLY_ALCO = /\bvins?\b|bi[eè]res?|pression|cocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|champagne|whisk|\brhums?\b|vodka|\bgin\b|ros[eé]s?\b|\brouges?\b|\bblancs?\b|pichets?|kir\b|pastis|ricard|martini|spritz|mojito|bordeaux|c[oô]tes?\b/i;
-const FLY_SWEET = /dessert|glaces?\b|sorbet|cr[eê]pes?|gaufres?|douceur|sucr[eé]|p[aâ]tisserie|g[aâ]teau/i;
-// Texte → lignes d'articles. Familles = lignes sans prix en majuscules (ou titres courts suivis d'articles).
+const cleanName = s => clean(String(s).replace(/[.…·_]{2,}/g,' ').replace(/(\s\.){2,}/g,' ').replace(/^\s*\d{1,2}\s*[.)]\s+/,'').replace(/^[\s\-–—•*·>»|;,]+/,'').replace(/[\s\-–—:|/.,;·•*(]+$/,'').replace(/\s{2,}/g,' '));
+// \b ne voit pas les lettres accentuées (« ROSÉ », « Café ») : on le remplace par une limite « lettre française »
+const frWords = re => new RegExp(re.source.replace(/\\b(?=[(\[a-zà-ÿ])/gi,'(?<![a-zà-ÿ])').replace(/\\b/g,'(?![a-zà-ÿ])'), 'i');
+const FLY_DRINK = frWords(/boisson|\bvins?\b|bi[eè]res?|pression|brasserie|softs?\b|caf[eé]s?\b|expresso|espresso|cappuccino|\blatte\b|chocolat chaud|\bth[eé]s?\b|infusion|cocktail|mocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|\beaux?\b|\bjus\b|sirop|limonade|soda|smoothie|milk.?shake|fruits? press|champagne|prosecco|spritz|cidre|whisk|\brhums?\b|vodka|\bgin\b|cognac|tequila|liqueur|ros[eé]s?\b|\brouges?\b|\bblancs?\b|bouteilles?|pichets?|\bverres?\b/i);
+const FLY_ALCO = frWords(/\bvins?\b|bi[eè]res?|pression|brasserie|cocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|champagne|prosecco|cidre|cava|cr[eé]mant|whisk|\brhums?\b|vodka|\bgin\b|cognac|bourbon|tequila|liqueur|calvados|armagnac|limoncello|g[eé]n[eé]pi|amaretto|baileys|porto|lillet|suze|campari|aperol|picon|ros[eé]s?\b|\brouges?\b|\bblancs?\b|pichets?|\bkir\b|pastis|ricard|martini|spritz|mojito|bordeaux|c[oô]tes?\b|blondes?\b|ambr[eé]es?\b|brunes?\b|\bipa\b|kriek|lager|stout|\bbulles\b|\d\s*°/i);
+const FLY_SOFT = frWords(/sans alcool|(?<![\d,.])0(?:[,.]0)?\s*%|(?<![\d,.])0\s*°/i); // « Bière 0,0 % », « Sans alcool » : 10 %
+const FLY_SWEET = frWords(/dessert|glaces?\b|sorbet|cr[eê]pes?|gaufres?|douceur|sucr[eé]|p[aâ]tisserie|g[aâ]teau/i);
+const SIZE_RE = /(?<![\w.,])\d+(?:[.,]\d+)?\s*(?:cl|ml|l)(?![a-zà-ÿ])/gi;
+const normSize = s => s.replace(/\s+/g,'').replace(/^(\d+)l$/i,'$1L').toLowerCase().replace(/(\d)l$/,'$1L');
+// Noms trop vagues (« Verre - 15 cl », « ½ pichet ») : précédés du nom de la famille
+const FLY_GENERIC = /^(verre|bouteille|pichet|carafe|demi|pinte|coupe|fl[uû]te|[¼½¾]|\d+(?:[.,]\d+)?\s*(?:cl|l)\b|1\s*l\b)/i;
+const niceCase = s => s===s.toUpperCase() ? s.charAt(0)+s.slice(1).toLowerCase() : s;
+// Lignes sans intérêt pour la caisse (paiement, mentions)
+const FLY_IGNORE = /(^|\s)CB(\s|$)|carte bancaire|tickets? resto|paiement|prix nets?|service compris|tva incluse|allerg[eè]ne/i;
+// Texte → lignes d'articles. Familles = lignes sans prix en majuscules, ou en gros caractères (« ## »), ou titres courts isolés.
 function parseFlyerText(text){
-  const lines = String(text||'').replace(/[£¢]/g,'€').split(/\r?\n/).map(l=>l.replace(/\s+/g,' ').trim());
-  const rows = []; let family = 'Divers', pending = null, prevPriced = true;
+  const raw = String(text||'').replace(/[£¢]/g,'€').split(/\r?\n/).map(l=>l.replace(/\s+/g,' ').trim());
   const letters = s => s.replace(/[^A-Za-zÀ-ÿ]/g,'');
-  const nextInfo = i => { for(let j=i+1; j<lines.length; j++) if(letters(lines[j]).length>=2 || findPrices(lines[j]).length){ const p = findPrices(lines[j]); return { priced:p.length>0, named: p.length>0 && letters(lines[j].slice(0,p[0].index)).length>=2 }; } return {priced:false, named:false}; };
+  // lignes à ignorer : titres décoratifs en lettres espacées (« L E S B O I S S O N S »), « Page 2 », paiement…
+  const skip = l => { const t = l.replace(/^##\s*/,'').split(' ').filter(x=>/[A-Za-zÀ-ÿ]/.test(x));
+    return (t.length>=6 && t.filter(x=>x.length===1).length/t.length > 0.6) || /^page\s*\d+$/i.test(l) || FLY_IGNORE.test(l); };
+  // ligne qui ne contient que des contenances (« 15cl 75cl ») : en-tête des colonnes de prix
+  const sizesOf = l => { const s = l.match(SIZE_RE) || []; return s.length && letters(l.replace(SIZE_RE,'')).length===0 && !findPrices(l).length ? s.map(normSize) : null; };
+  // une liste qui finit par une virgule continue sur la ligne suivante (« Orange, Pomme, … ,» / « Banane …… 3,00 € »)
+  const lines = [];
+  raw.forEach(l=>{ const p = lines[lines.length-1]; if(p && /,$/.test(p) && l && !skip(l) && !findPrices(p).length) lines[lines.length-1] = p+' '+l.replace(/^##\s*/,''); else lines.push(skip(l) ? '' : l); });
+  const rows = []; let family = 'Divers', pending = null, prevBlank = true, sizes = [];
+  const nextInfo = i => {
+    for(let j=i+1; j<lines.length; j++){
+      const l = lines[j].replace(/^##\s*/,''); if(sizesOf(l) || (letters(l).length<2 && !findPrices(l).length)) continue;
+      const p = findPrices(l); return { priced:p.length>0, named: p.length>0 && letters(l.slice(0,p[0].index).replace(SIZE_RE,'')).length>=2 };
+    }
+    return {priced:false, named:false};
+  };
   const push = (name, price) => {
     name = cleanName(name); if(letters(name).length<2) return false;
-    const groupe = FLY_DRINK.test(family) ? 'Boissons' : FLY_SWEET.test(family) ? 'Desserts' : 'Plats';
-    rows.push({ groupe, category:family, name, price:Math.round(price*100)/100, tva: groupe==='Boissons' && FLY_ALCO.test(family+' '+name) ? 20 : 10,
-      price2:null, tva2:null, listIds:[], placeIds:[] });
+    if(FLY_GENERIC.test(name) && family!=='Divers') name = niceCase(family.replace(SIZE_RE,'').replace(/[\s\-–—]+$/,''))+' '+name;
+    const ref = family==='Divers' ? name : family;
+    const groupe = FLY_DRINK.test(ref) ? 'Boissons' : FLY_SWEET.test(ref) ? 'Desserts' : 'Plats';
+    const alco = groupe==='Boissons' && FLY_ALCO.test(family+' '+name) && !FLY_SOFT.test(family+' '+name);
+    rows.push({ groupe, category:family, name, price:Math.round(price*100)/100, tva: alco ? 20 : 10, price2:null, tva2:null, listIds:[], placeIds:[] });
     return true;
   };
-  lines.forEach((line, i)=>{
-    if(!line){ pending = null; prevPriced = true; return; }
+  lines.forEach((full, i)=>{
+    if(!full){ pending = null; prevBlank = true; return; }
+    const big = /^##\s*/.test(full), line = full.replace(/^##\s*/,'');
     const ps = findPrices(line);
     if(ps.length){
-      // plusieurs articles sur une ligne (colonnes collées) : chaque prix ferme le texte qui le précède
-      let from = 0, first = true;
-      ps.forEach(p=>{
+      // chaque prix ferme le texte qui le précède (colonnes collées) ;
+      // un prix précédé d'une simple contenance (« 50 cl : 3 € ») ou de rien est un autre prix du même article
+      const entries = []; let from = 0;
+      ps.forEach((p, k)=>{
         const seg = line.slice(from, p.index); from = p.end;
-        if(letters(seg).length>=2) push(seg, p.value);
-        else if(first && pending) push(pending, p.value); // prix seul sous le nom de l'article
-        first = false;
+        const label = (seg.match(SIZE_RE)||[])[0];
+        if(letters(seg.replace(SIZE_RE,'')).length>=2) entries.push({name:seg, prices:[{v:p.value}]});
+        else if(entries.length) entries[entries.length-1].prices.push({v:p.value, label});
+        else if(k===0 && pending) entries.push({name:pending, prices:[{v:p.value, label}]}); // prix sous le nom de l'article
       });
-      pending = null; prevPriced = true; return;
+      entries.forEach(e=>{
+        if(e.prices.length===1) return push(e.name + (e.prices[0].label ? ' '+normSize(e.prices[0].label) : ''), e.prices[0].v);
+        const base = cleanName(e.name).replace(new RegExp(`\\s*(${sizes.join('|')})$`,'i'), '');
+        e.prices.forEach((p,k)=>push(`${base} ${p.label ? normSize(p.label) : sizes.length===e.prices.length ? sizes[k] : `(${k+1})`}`, p.v)); // « … 15cl » et « … 75cl »
+      });
+      pending = null; prevBlank = false; return;
     }
-    const L = letters(line); if(L.length<2){ return; }
-    const upper = line.replace(/[^A-ZÀ-Þ]/g,'').length / L.length, words = line.split(' ').length, nx = nextInfo(i);
+    const sz = sizesOf(line); if(sz){ sizes = sz; return; }
+    const L = letters(line); if(L.length<2) return;
+    const hs = (line.match(SIZE_RE) || []).map(normSize);
+    const head = line.replace(SIZE_RE,'').replace(/[\s\-–—•·]+$/,'').trim(); // « ROSÉ 15cl 75cl » → « ROSÉ »
+    const upper = head.replace(/[^A-ZÀ-Þ]/g,'').length / Math.max(1, letters(head).length), words = head.split(' ').length, nx = nextInfo(i);
     // (si la ligne suivante n'est qu'un prix, cette ligne est le nom de l'article, pas une famille)
-    const heading = line.length<=45 && !/[,;]/.test(line) && !/\d/.test(line) && nx.priced && nx.named
-      && (upper>0.7 || (words<=4 && /^[A-ZÀ-Þ]/.test(line) && prevPriced));
-    if(heading){ family = cleanName(line); pending = null; prevPriced = true; return; }
+    // (« AOP • 75 cl », « IGP d'Oc » : mention sous un vin, pas une famille)
+    const heading = head.length<=45 && !/[,;•|]/.test(head) && !/\d/.test(head) && !/\b(AOP|AOC|IGP|DOC|DOCG|IGT)\b/.test(head) && nx.priced && nx.named
+      && (upper>0.7 || big || (words<=4 && /^[A-ZÀ-Þ]/.test(head) && prevBlank));
+    if(heading){ family = cleanName(hs.length>=2 ? head : line); sizes = hs.length>=2 ? hs : []; pending = null; prevBlank = true; return; }
     pending = nx.priced && !nx.named ? line : null; // nom dont le prix est à la ligne suivante, sinon description ignorée
-    prevPriced = false;
+    prevBlank = false;
+  });
+  // doublons exacts (même article répété sur une autre page)
+  const seen = new Set(), before = rows.length;
+  rows.splice(0, rows.length, ...rows.filter(r=>{ const key = [r.category, r.name.toLowerCase(), r.price].join('|'); return !seen.has(key) && seen.add(key); }));
+  const removedDups = before - rows.length;
+  // groupe : d'après la famille, sinon d'après ses articles (contenances « 33 cl », noms de boissons) ; puis TVA
+  const drinkish = new RegExp(FLY_DRINK.source+'|'+SIZE_RE.source, 'i');
+  const famGroup = {};
+  [...new Set(rows.map(r=>r.category))].forEach(f=>{
+    const its = rows.filter(r=>r.category===f), share = re => its.filter(r=>re.test(r.name)).length / its.length;
+    famGroup[f] = f!=='Divers' && FLY_DRINK.test(f) ? 'Boissons' : f!=='Divers' && FLY_SWEET.test(f) ? 'Desserts'
+      : share(drinkish) >= 0.5 || (f!=='Divers' && FLY_ALCO.test(f)) ? 'Boissons' : share(FLY_SWEET) >= 0.5 ? 'Desserts' : 'Plats';
+  });
+  rows.forEach(r=>{
+    r.groupe = r.category==='Divers' ? (drinkish.test(r.name) ? 'Boissons' : FLY_SWEET.test(r.name) ? 'Desserts' : 'Plats') : famGroup[r.category];
+    const t = r.category+' '+r.name;
+    r.tva = r.groupe==='Boissons' && FLY_ALCO.test(t) && !FLY_SOFT.test(t) ? 20 : 10;
   });
   // virgule perdue par l'OCR (« 950€ » pour 9,50 €) : prix entier 15× au-dessus de sa famille → divisé par 100
   const fixed = [];
@@ -841,7 +952,7 @@ function parseFlyerText(text){
     const med = others.length ? others[Math.floor(others.length/2)] : 0;
     if(r.price>=100 && Number.isInteger(r.price) && med && r.price > med*15){ fixed.push(`${r.name} : ${r.price} → ${r.price/100}`); r.price = r.price/100; }
   });
-  return { rows, lists: [], fixed };
+  return { rows, lists: [], fixed, removedDups };
 }
 let flyerName = '';
 async function readFlyer(files){
@@ -851,7 +962,7 @@ async function readFlyer(files){
   try{
     for(const file of files){
       const pdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
-      const text = pdf ? await readPDF(await file.arrayBuffer(), set) : await ocrAll([await imgToCanvas(file)], set);
+      const text = pdf ? await readPDF(await file.arrayBuffer(), set) : (await ocrAll([await imgToCanvas(file)], set)).join('\n\n');
       const ta = $('flyerText'); ta.value = (ta.value.trim() ? ta.value.trim()+'\n\n' : '') + text.trim();
       flyerName = flyerName || file.name;
       log(`Flyer ${file.name} : ${text.split('\n').filter(l=>l.trim()).length} ligne(s) de texte lues.`);
@@ -869,6 +980,7 @@ $('btnFlyerParse').onclick = () => {
   if(!res.rows.length) return toast('Aucun article avec un prix trouvé dans le texte.','err');
   load(res, 'Flyer', flyerName || 'flyer');
   if(res.fixed.length) log(`Prix probablement mal lus, corrigés (virgule manquante) : ${res.fixed.join(' · ')}`,'w');
+  if(res.removedDups) log(`${res.removedDups} article(s) en double retiré(s) (même famille, même nom, même prix).`);
   log('Flyer : TVA proposée 10 % (20 % pour les alcools), groupes Plats / Boissons / Desserts devinés d\'après les familles : à vérifier.','w');
   $('editorCard').scrollIntoView({behavior:'smooth'});
 };
