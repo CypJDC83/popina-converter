@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>POS Converter v5.4.1 – Field Tech by cyp</title>
+<title>POS Converter v5.5 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -25,7 +25,7 @@ details.card>summary::-webkit-details-marker{display:none}
 details.card[open]>summary{margin-bottom:.8rem}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.7rem}
 .fg label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:.25rem}
-input,select{background:#0b1220;border:1px solid var(--line);color:var(--text);border-radius:5px;padding:.4rem .55rem;font:inherit;font-size:.82rem;width:100%}
+input,select,textarea{background:#0b1220;border:1px solid var(--line);color:var(--text);border-radius:5px;padding:.4rem .55rem;font:inherit;font-size:.82rem;width:100%}
 input:focus,select:focus{outline:2px solid var(--accent);border-color:var(--accent)}
 .row{display:flex;gap:.4rem;align-items:center}
 .row input{flex:1;min-width:0}
@@ -88,6 +88,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mode.on{color:var(--text);border-color:var(--accent);background:#0ea5e922}
 body[data-mode="edit"] [data-only="convert"],body[data-mode="convert"] [data-only="edit"]{display:none!important}
 td input.mod{border-color:var(--accent);background:#38bdf814}
+.flyer{margin-top:.8rem;padding:.8rem;border:1px solid var(--line);border-radius:8px;background:var(--panel2)}
+.flyer textarea{resize:vertical;min-height:180px;line-height:1.45}
 .diffbox{margin-top:.8rem}
 .diffbox>summary{cursor:pointer;color:var(--accent);font-size:.8rem;font-weight:700}
 .diff{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;margin-top:.5rem;font-size:.74rem}
@@ -103,7 +105,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.4.1</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.5</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -135,7 +137,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
   <h3><span class="step">2</span> Importer un fichier</h3>
   <div class="drop" id="drop">
     <div data-only="convert">Glissez ici votre fichier ou cliquez pour parcourir</div>
-    <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b></small>
+    <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b> · <b>photo / PDF d'un flyer</b></small>
     <div data-only="edit">Glissez ici le <b>JSON exporté depuis le Back-Office Popina</b> (ancien ou nouveau Back-Office) ou cliquez pour parcourir</div>
     <small data-only="edit">Seuls les articles, familles, groupes, listes et pôles sont modifiés : personnel, salles, paiements, menus, imprimantes… restent intacts.<br>
       Ensuite, utilisez les boutons <b>CSV</b> ci-dessous pour appliquer un CSV Popina (par ex. exporté ici puis retravaillé sous Excel).</small>
@@ -143,12 +145,27 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
   </div>
   <div class="toolbar" style="margin-top:.7rem">
     <button class="b-sec" id="btnSample" data-only="convert">Charger un exemple CSV</button>
+    <button class="b-sec" id="btnFlyer" data-only="convert">📷 Flyer (photo / PDF)</button>
     <button class="b-danger" id="btnClear" disabled>Tout vider</button>
     <span class="sep" data-only="edit"></span>
     <button class="b-sec" id="btnCsvAdd" data-only="edit" disabled title="Les articles du CSV sont ajoutés ou mis à jour, les autres sont gardés">➕ CSV : ajouter / mettre à jour</button>
     <button class="b-sec" id="btnCsvReplace" data-only="edit" disabled title="La carte devient exactement le CSV : les articles absents du CSV sont supprimés">🔄 CSV : remplacer la carte</button>
     <input type="file" id="csvFile" accept=".csv,.txt" style="display:none">
     <span class="sub" id="srcInfo"></span>
+  </div>
+  <div class="flyer" id="flyer" style="display:none" data-only="convert">
+    <div class="toolbar">
+      <b class="sub">📷 Flyer :</b>
+      <button class="b-sec" id="btnFlyerFile">Choisir des photos ou un PDF</button>
+      <span class="sub" id="flyerStatus"></span>
+      <button class="b-sec" id="btnFlyerClose" style="margin-left:auto">Fermer</button>
+    </div>
+    <textarea id="flyerText" rows="12" aria-label="Texte du flyer" placeholder="Le texte lu sur le flyer apparaît ici (plusieurs photos s'ajoutent à la suite).&#10;Corrigez-le si besoin, supprimez les lignes inutiles… ou collez directement le texte d'une carte."></textarea>
+    <div class="toolbar" style="margin-top:.5rem;margin-bottom:0">
+      <button class="b-primary" id="btnFlyerParse">Créer la carte à partir de ce texte</button>
+      <span class="sub">Une ligne avec un prix = un article · une ligne en MAJUSCULES sans prix = une famille · le reste est ignoré.</span>
+    </div>
+    <input type="file" id="flyerFile" accept="image/*,.pdf,application/pdf" multiple style="display:none">
   </div>
   <div class="log" id="log" style="display:none"></div>
   <div class="resume" id="resume" style="display:none">
@@ -674,7 +691,194 @@ const csvIn = $('csvFile');
 $('btnCsvAdd').onclick = () => { csvReplace = false; csvIn.click(); };
 $('btnCsvReplace').onclick = () => { csvReplace = true; csvIn.click(); };
 csvIn.onchange = e => { const f = e.target.files[0]; csvIn.value = ''; if(f) handleFile(f, ()=>{ csvReplace = false; }); };
+/* ============ Flyer : photo (OCR) ou PDF → texte → articles ============ */
+// Bibliothèques chargées seulement au premier flyer (connexion internet nécessaire ; le traitement reste dans le navigateur)
+const LIBS = {
+  tesseract: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js',
+  pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+  pdfWorker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+};
+const loadedLibs = {};
+const loadScript = src => loadedLibs[src] || (loadedLibs[src] = new Promise((ok, ko)=>{
+  const s = document.createElement('script'); s.src = src; s.onload = ok;
+  s.onerror = () => { delete loadedLibs[src]; ko(new Error('bibliothèque de lecture introuvable (vérifiez la connexion internet)')); };
+  document.head.appendChild(s);
+}));
+// Photo → canvas agrandi (l'OCR lit mieux un texte assez grand)
+const imgToCanvas = blob => new Promise((ok, ko)=>{
+  const url = URL.createObjectURL(blob), img = new Image();
+  img.onload = () => {
+    const k = Math.min(Math.min(3, Math.max(1, 2000/img.width)), 4000/Math.max(img.width, img.height));
+    const c = document.createElement('canvas'); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); ko(new Error('image illisible')); };
+  img.src = url;
+});
+async function ocrAll(sources, set){
+  set('Chargement de la reconnaissance de texte…');
+  await loadScript(LIBS.tesseract);
+  let cur = 0;
+  const worker = await Tesseract.createWorker('fra', 1, { logger: m => {
+    if(m.status==='recognizing text') set(`Lecture du texte${sources.length>1 ? ` ${cur+1}/${sources.length}` : ''} : ${Math.round(m.progress*100)} %`);
+    else if(/load|initializ/i.test(m.status)) set('Chargement de la reconnaissance de texte (la première fois : quelques Mo)…');
+  } });
+  try{
+    const out = [];
+    for(cur=0; cur<sources.length; cur++){
+      const { data } = await worker.recognize(sources[cur]);
+      // mots positionnés → même découpage en colonnes que les PDF (y inversé : plus haut = plus grand)
+      const words = (data.words||[]).filter(w=>w.text.trim() && w.confidence>20)
+        .map(w=>({s:w.text, x:w.bbox.x0, y:-w.bbox.y1, w:w.bbox.x1-w.bbox.x0, h:w.bbox.y1-w.bbox.y0}));
+      out.push(words.length ? layoutLines(words, sources[cur].width).join('\n') : data.text);
+    }
+    return out.join('\n\n');
+  }
+  finally{ await worker.terminate(); }
+}
+const pdfLines = (items, pageWidth) => layoutLines(items.filter(i=>i.str && i.str.trim())
+  .map(i=>({s:i.str, x:i.transform[4], y:i.transform[5], w:i.width, h:Math.abs(i.transform[3])||10})), pageWidth);
+// Éléments de texte positionnés ({s, x, y, w, h}, y vers le haut) → lignes, colonne par colonne
+function layoutLines(its, pageWidth){
+  if(!its.length) return [];
+  const wide = i => i.w > pageWidth*0.45;
+  // gouttière = bande verticale traversée par presque aucun texte (un titre qui déborde ne la masque pas)
+  const cover = new Uint16Array(Math.ceil(pageWidth)+2), tol = Math.max(1, Math.floor(its.length*0.03));
+  its.filter(i=>!wide(i)).forEach(i=>{ for(let x=Math.max(0,Math.floor(i.x)); x<Math.min(cover.length, Math.ceil(i.x+i.w)); x++) cover[x]++; });
+  const minX = Math.max(0, Math.floor(Math.min(...its.map(i=>i.x)))), maxX = Math.min(cover.length-1, Math.ceil(Math.max(...its.map(i=>i.x+i.w))));
+  const cuts = []; let run = 0;
+  const minGap = Math.max(12, pageWidth*0.03);
+  for(let x=minX; x<=maxX; x++){ if(cover[x]<=tol) run++; else { if(run>=minGap) cuts.push(x-run/2); run = 0; } }
+  let cols = [[]].concat(cuts.map(()=>[]));
+  const titles = [];
+  its.forEach(i=>{ if(wide(i) || cuts.some(c=>i.x < c && i.x+i.w > c)) titles.push(i); else cols[cuts.filter(c=>i.x+i.w/2 > c).length].push(i); });
+  // une « colonne » qui ne contient que des prix appartient à la colonne de gauche (noms à gauche, prix alignés à droite)
+  const isPrice = s => /^\s*(€|eur(os?)?|\d{1,3}([.,]\d{1,2})?)\s*$/i.test(s) || (findPrices(s).length>0 && !/[a-zà-ÿ]{3}/i.test(s.replace(/eur(os?)?/i,'')));
+  cols = cols.filter(c=>c.length).reduce((acc, c)=>{
+    if(acc.length && c.filter(i=>isPrice(i.s)).length >= c.length*0.7) acc[acc.length-1].push(...c); else acc.push(c);
+    return acc; }, []);
+  const toLines = arr => {
+    const sorted = arr.slice().sort((a,b)=>b.y-a.y || a.x-b.x), lines = [];
+    sorted.forEach(i=>{ const l = lines.find(l=>Math.abs(l.y-i.y) < Math.max(l.h, i.h)*0.5); if(l){ l.items.push(i); } else lines.push({y:i.y, h:i.h, items:[i]}); });
+    return lines.sort((a,b)=>b.y-a.y).map(l=>l.items.sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim());
+  };
+  return [...toLines(titles), ...cols.flatMap(c=>['', ...toLines(c)])];
+}
+async function readPDF(buf, set){
+  set('Ouverture du PDF…');
+  await loadScript(LIBS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfWorker;
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise, texts = [], scans = [];
+  for(let n=1; n<=pdf.numPages; n++){
+    set(`Lecture du PDF : page ${n}/${pdf.numPages}…`);
+    const page = await pdf.getPage(n), vp1 = page.getViewport({scale:1});
+    const lines = pdfLines((await page.getTextContent()).items, vp1.width);
+    if(lines.join('').replace(/\s/g,'').length > 30){ texts.push(lines.join('\n')); continue; }
+    // page scannée (image sans texte) : on la dessine puis on la passe à l'OCR
+    const vp = page.getViewport({scale:2.5}), c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+    await page.render({canvasContext:c.getContext('2d'), viewport:vp}).promise;
+    texts.push(null); scans.push(c);
+  }
+  if(scans.length){ const ocr = (await ocrAll(scans, set)).split('\n\n'); let k = 0; texts.forEach((t,i)=>{ if(t===null) texts[i] = ocr[k++] || ''; }); }
+  return texts.join('\n\n');
+}
+
+// Prix : « 12,50 », « 12.50 € », « 12€50 », « 12 € », « 12 eur », ou nombre seul en fin de ligne (« Burger ...... 14 »)
+const NOT_UNIT = String.raw`(?!\s*(?:cl|ml|l\b|g\b|gr\b|kg|cm|mm|%|°|pers|pcs|pi[eè]ces?|min\b|mn\b|ans?\b))`;
+const PRICE_RE = new RegExp(String.raw`(?<!\d[.,]?)(\d{1,3})(?:\s*[€E]\s*(\d{2})(?!\d)|\s?[.,]\s?(\d{1,2})(?!\d)${NOT_UNIT}(?:\s*(?:€|eur(?:os?)?\b))?|\s*(?:€|eur(?:os?)?\b))`, 'gi');
+function findPrices(line){
+  const out = [];
+  for(const m of line.matchAll(PRICE_RE)){
+    const dec = m[2] || m[3] || '';
+    out.push({ index:m.index, end:m.index+m[0].length, value:+m[1] + (dec ? +dec.padEnd(2,'0')/100 : 0) });
+  }
+  if(!out.length){ const m = line.match(/(?:^|[\s.…·:_\-–—])(\d{1,3})\s*$/); if(m && /[a-zà-ÿ]{3}/i.test(line.slice(0, m.index))) out.push({ index:m.index+m[0].indexOf(m[1]), end:line.length, value:+m[1] }); }
+  return out.filter(p=>p.value>0 && p.value<1000);
+}
+const cleanName = s => clean(String(s).replace(/[.…·_]{2,}/g,' ').replace(/^\s*\d{1,2}\s*[.)]\s+/,'').replace(/^[\s\-–—•*·>»|]+/,'').replace(/[\s\-–—:|/.,·•*(]+$/,'').replace(/\s{2,}/g,' '));
+const FLY_DRINK = /boisson|\bvins?\b|bi[eè]res?|pression|softs?\b|caf[eé]s?\b|\bth[eé]s?\b|infusion|cocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|\beaux?\b|\bjus\b|sirop|champagne|whisk|\brhums?\b|vodka|\bgin\b|ros[eé]s?\b|\brouges?\b|\bblancs?\b|bouteilles?|pichets?/i;
+const FLY_ALCO = /\bvins?\b|bi[eè]res?|pression|cocktail|ap[eé]ritif|ap[eé]ro|digestif|spiritueux|alcool|champagne|whisk|\brhums?\b|vodka|\bgin\b|ros[eé]s?\b|\brouges?\b|\bblancs?\b|pichets?|kir\b|pastis|ricard|martini|spritz|mojito|bordeaux|c[oô]tes?\b/i;
+const FLY_SWEET = /dessert|glaces?\b|sorbet|cr[eê]pes?|gaufres?|douceur|sucr[eé]|p[aâ]tisserie|g[aâ]teau/i;
+// Texte → lignes d'articles. Familles = lignes sans prix en majuscules (ou titres courts suivis d'articles).
+function parseFlyerText(text){
+  const lines = String(text||'').replace(/[£¢]/g,'€').split(/\r?\n/).map(l=>l.replace(/\s+/g,' ').trim());
+  const rows = []; let family = 'Divers', pending = null, prevPriced = true;
+  const letters = s => s.replace(/[^A-Za-zÀ-ÿ]/g,'');
+  const nextInfo = i => { for(let j=i+1; j<lines.length; j++) if(letters(lines[j]).length>=2 || findPrices(lines[j]).length){ const p = findPrices(lines[j]); return { priced:p.length>0, named: p.length>0 && letters(lines[j].slice(0,p[0].index)).length>=2 }; } return {priced:false, named:false}; };
+  const push = (name, price) => {
+    name = cleanName(name); if(letters(name).length<2) return false;
+    const groupe = FLY_DRINK.test(family) ? 'Boissons' : FLY_SWEET.test(family) ? 'Desserts' : 'Plats';
+    rows.push({ groupe, category:family, name, price:Math.round(price*100)/100, tva: groupe==='Boissons' && FLY_ALCO.test(family+' '+name) ? 20 : 10,
+      price2:null, tva2:null, listIds:[], placeIds:[] });
+    return true;
+  };
+  lines.forEach((line, i)=>{
+    if(!line){ pending = null; prevPriced = true; return; }
+    const ps = findPrices(line);
+    if(ps.length){
+      // plusieurs articles sur une ligne (colonnes collées) : chaque prix ferme le texte qui le précède
+      let from = 0, first = true;
+      ps.forEach(p=>{
+        const seg = line.slice(from, p.index); from = p.end;
+        if(letters(seg).length>=2) push(seg, p.value);
+        else if(first && pending) push(pending, p.value); // prix seul sous le nom de l'article
+        first = false;
+      });
+      pending = null; prevPriced = true; return;
+    }
+    const L = letters(line); if(L.length<2){ return; }
+    const upper = line.replace(/[^A-ZÀ-Þ]/g,'').length / L.length, words = line.split(' ').length, nx = nextInfo(i);
+    // (si la ligne suivante n'est qu'un prix, cette ligne est le nom de l'article, pas une famille)
+    const heading = line.length<=45 && !/[,;]/.test(line) && !/\d/.test(line) && nx.priced && nx.named
+      && (upper>0.7 || (words<=4 && /^[A-ZÀ-Þ]/.test(line) && prevPriced));
+    if(heading){ family = cleanName(line); pending = null; prevPriced = true; return; }
+    pending = nx.priced && !nx.named ? line : null; // nom dont le prix est à la ligne suivante, sinon description ignorée
+    prevPriced = false;
+  });
+  // virgule perdue par l'OCR (« 950€ » pour 9,50 €) : prix entier 15× au-dessus de sa famille → divisé par 100
+  const fixed = [];
+  rows.forEach(r=>{
+    const others = rows.filter(x=>x!==r && x.category===r.category).map(x=>x.price).sort((a,b)=>a-b);
+    const med = others.length ? others[Math.floor(others.length/2)] : 0;
+    if(r.price>=100 && Number.isInteger(r.price) && med && r.price > med*15){ fixed.push(`${r.name} : ${r.price} → ${r.price/100}`); r.price = r.price/100; }
+  });
+  return { rows, lists: [], fixed };
+}
+let flyerName = '';
+async function readFlyer(files){
+  $('flyer').style.display = 'block';
+  const set = m => $('flyerStatus').textContent = m;
+  $('btnFlyerParse').disabled = $('btnFlyerFile').disabled = true;
+  try{
+    for(const file of files){
+      const pdf = /pdf/i.test(file.type) || /\.pdf$/i.test(file.name);
+      const text = pdf ? await readPDF(await file.arrayBuffer(), set) : await ocrAll([await imgToCanvas(file)], set);
+      const ta = $('flyerText'); ta.value = (ta.value.trim() ? ta.value.trim()+'\n\n' : '') + text.trim();
+      flyerName = flyerName || file.name;
+      log(`Flyer ${file.name} : ${text.split('\n').filter(l=>l.trim()).length} ligne(s) de texte lues.`);
+    }
+    set('✔ Texte lu : vérifiez-le, puis « Créer la carte ».');
+  }catch(e){ console.error(e); set(''); log('Flyer : '+e.message,'e'); toast('Lecture du flyer impossible : '+e.message,'err'); }
+  finally{ $('btnFlyerParse').disabled = $('btnFlyerFile').disabled = false; }
+}
+$('btnFlyer').onclick = () => { $('flyer').style.display = 'block'; $('flyerText').focus(); };
+$('btnFlyerClose').onclick = () => { $('flyer').style.display = 'none'; };
+$('btnFlyerFile').onclick = () => $('flyerFile').click();
+$('flyerFile').onchange = e => { const f = [...e.target.files]; e.target.value = ''; if(f.length) readFlyer(f); };
+$('btnFlyerParse').onclick = () => {
+  const res = parseFlyerText($('flyerText').value);
+  if(!res.rows.length) return toast('Aucun article avec un prix trouvé dans le texte.','err');
+  load(res, 'Flyer', flyerName || 'flyer');
+  if(res.fixed.length) log(`Prix probablement mal lus, corrigés (virgule manquante) : ${res.fixed.join(' · ')}`,'w');
+  log('Flyer : TVA proposée 10 % (20 % pour les alcools), groupes Plats / Boissons / Desserts devinés d\'après les familles : à vérifier.','w');
+  $('editorCard').scrollIntoView({behavior:'smooth'});
+};
+const isFlyerFile = f => /^image\//.test(f.type) || /pdf/i.test(f.type) || /\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name);
+
 function handleFile(file, done){
+  if(isFlyerFile(file)){
+    if(state.mode==='edit'){ toast('Les flyers s\'importent dans le mode « Créer une carte ».','err'); return; }
+    return readFlyer([file]);
+  }
   log(`Chargement de ${file.name} (${(file.size/1024).toFixed(1)} Ko)…`);
   const r = new FileReader(); r.onload = e => { handleText(decode(e.target.result), file.name); if(done) done(); }; r.readAsArrayBuffer(file);
 }
@@ -706,7 +910,7 @@ $('btnClear').onclick = () => {
 function applyMode(){
   document.body.dataset.mode = state.mode;
   document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('on', b.dataset.mode===state.mode));
-  fileIn.accept = '.csv,.json,.txt';
+  fileIn.accept = state.mode==='edit' ? '.csv,.json,.txt' : '.csv,.json,.txt,.pdf,image/*';
   // numérotation des étapes : pas d'étape « établissement » en mode édition
   document.querySelectorAll('.step').forEach((s,i)=>{ if(i) s.textContent = state.mode==='edit' ? i : i+1; });
   if(state.mode!=='edit' && $('fI').value==='changed') $('fI').value='';
