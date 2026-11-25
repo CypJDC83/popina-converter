@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="cyp">
 <meta name="copyright" content="© 2026 cyp. Tous droits réservés.">
-<title>POS Converter v5.6 – Field Tech by cyp</title>
+<title>POS Converter v5.7 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -113,7 +113,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.6</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.7</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -1821,6 +1821,34 @@ function buildBOJSON(){
     L('buttonGroup').forEach(p=>{ if((p.buttons||[]).some(b=>b.objectId===g.id)){ p.buttons = p.buttons.filter(b=>b.objectId!==g.id); wasFull.add(p.id); } });
   });
   if(goneF.size) drop(c=>c.type==='buttonGroup' && goneF.has(c.data.id));
+
+  // Limite du Back-Office : un dossier « Folder » / « SelectionFolder » a entre 4 et 16 lignes (soit 32 boutons sur 2 colonnes).
+  // Un dossier trop rempli est coupé en dossiers voisins numérotés (« Petites races 1 », « Petites races 2 »…)
+  const ROWS_MIN = 4, ROWS_MAX = 16, isFolder = g => g.layout==='Folder' || g.layout==='SelectionFolder';
+  L('buttonGroup').filter(g=>!g.isRoot && isFolder(g)).forEach(g=>{
+    const cols = g.cols || 2, max = ROWS_MAX*cols, btns = (g.buttons||[]).slice().sort((a,b)=>a.index-b.index);
+    if(btns.length <= max) return;
+    const n = Math.ceil(btns.length/max), size = Math.ceil(btns.length/n), base = g.name;
+    const parent = L('buttonGroup').find(p=>(p.buttons||[]).some(b=>b.type==='buttonGroup' && b.objectId===g.id));
+    const pBtn = parent && parent.buttons.find(b=>b.objectId===g.id);
+    for(let k=0; k<n; k++){
+      const part = btns.slice(k*size, (k+1)*size); part.forEach((b,i)=>{ b.index = i; });
+      const name = `${base} ${k+1}`;
+      if(!k){ g.name = name; g.buttons = part; g.rows = 0; continue; } // rows recalculé juste après
+      const ng = up('buttonGroup', {...g, id:uuid(), name, buttons:part, rows:0});
+      if(!parent){ warn.push(`Dossier « ${name} » créé mais sans dossier parent : à placer dans le Back-Office.`); continue; }
+      parent.buttons.forEach(b=>{ if(b.index >= pBtn.index+k) b.index++; });
+      parent.buttons.push({...pBtn, id:uuid(), objectId:ng.id, index:pBtn.index+k});
+      parent.buttons.sort((a,b)=>a.index-b.index);
+    }
+    info.push(`Dossier « ${base} » trop rempli (${btns.length} boutons, max ${max}) : coupé en ${n} dossiers`);
+  });
+  // Nombre de lignes de chaque dossier ramené entre 4 et 16 (en gardant au moins la place pour tous ses boutons)
+  L('buttonGroup').forEach(g=>{
+    if(!isFolder(g)) return;
+    const need = Math.ceil((g.buttons||[]).length/(g.cols||2));
+    g.rows = Math.min(ROWS_MAX, Math.max(ROWS_MIN, g.rows||8, need));
+  });
 
   if(removed) warn.push(`${removed} entrée(s) retirée(s) du fichier (articles supprimés, prix emporter, affectations, dossiers vides…). Si l'import du Back-Office ne fait qu'ajouter / mettre à jour, ces retraits ne seront pas appliqués : vérifiez sur un établissement de test.`);
   if(badTax) warn.push(`${badTax} TVA absente(s) du fichier d'origine et hors 5,5/10/20 : exportée(s) en TVA 20 %.`);
