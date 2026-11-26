@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="cyp">
 <meta name="copyright" content="© 2026 cyp. Tous droits réservés.">
-<title>POS Converter v5.7 – Field Tech by cyp</title>
+<title>POS Converter v5.8 – Field Tech by cyp</title>
 <style>
 :root{
   --bg:#0b1220;--panel:#131c2e;--panel2:#1a2540;--line:#2a3856;
@@ -113,7 +113,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
 <div class="wrap">
 
 <header>
-  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.7</span> <span class="sub">by cyp</span></h1>
+  <h1>⚡ POS Converter <span class="badge">FIELD TECH v5.8</span> <span class="sub">by cyp</span></h1>
   <div class="sub">100 % local • Nova / CSV / JSON Popina → édition → export</div>
 </header>
 
@@ -136,6 +136,12 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
     <div class="fg"><label for="f_city">Ville</label><input id="f_city" placeholder="Paris"></div>
     <div class="fg"><label for="f_phone">Téléphone</label><input id="f_phone" placeholder="01 23 45 67 89"></div>
     <div class="fg"><label for="f_gerant">Code vendeur (Gérant)</label><input id="f_gerant" value="0000"></div>
+    <div class="fg"><label>Modes de travail (salles activées)</label>
+      <div class="row" style="flex-wrap:wrap;gap:.9rem;padding-top:.3rem;font-size:.8rem">
+        <label style="display:inline-flex;align-items:center;gap:.3rem;margin:0;font-size:.8rem;color:var(--text);cursor:pointer"><input type="checkbox" id="f_mDirect" checked style="width:auto"> Vente directe</label>
+        <label style="display:inline-flex;align-items:center;gap:.3rem;margin:0;font-size:.8rem;color:var(--text);cursor:pointer"><input type="checkbox" id="f_mTable" checked style="width:auto"> Plan de table</label>
+        <label style="display:inline-flex;align-items:center;gap:.3rem;margin:0;font-size:.8rem;color:var(--text);cursor:pointer"><input type="checkbox" id="f_mTake" style="width:auto"> À emporter</label>
+      </div></div>
   </div>
   <div class="toolbar" style="margin-top:.8rem"><button class="b-sec" id="btnResetEtab">Effacer ces infos</button></div>
 </details>
@@ -145,7 +151,7 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
   <h3><span class="step">2</span> Importer un fichier</h3>
   <div class="drop" id="drop">
     <div data-only="convert">Glissez ici votre fichier ou cliquez pour parcourir</div>
-    <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b> · <b>photo / PDF d'un flyer</b></small>
+    <small data-only="convert">Détection automatique : <b>prog_nova.csv</b> (Nova) · <b>CSV Popina</b> · <b>JSON Popina</b> · <b>photo / PDF d'un flyer</b> · <b>cahier des charges JDC (PDF)</b></small>
     <div data-only="edit">Glissez ici le <b>JSON exporté depuis le Back-Office Popina</b> (ancien ou nouveau Back-Office) ou cliquez pour parcourir</div>
     <small data-only="edit">Seuls les articles, familles, groupes, listes et pôles sont modifiés : personnel, salles, paiements, menus, imprimantes… restent intacts.<br>
       Ensuite, utilisez les boutons <b>CSV</b> ci-dessous pour appliquer un CSV Popina (par ex. exporté ici puis retravaillé sous Excel).</small>
@@ -154,6 +160,8 @@ td input.mod{border-color:var(--accent);background:#38bdf814}
   <div class="toolbar" style="margin-top:.7rem">
     <button class="b-sec" id="btnSample" data-only="convert">Charger un exemple CSV</button>
     <button class="b-sec" id="btnFlyer" data-only="convert">📷 Flyer (photo / PDF)</button>
+    <button class="b-sec" id="btnCdc" data-only="convert" title="Remplit les informations de l'établissement à partir du cahier des charges JDC (PDF formulaire)">📋 Cahier des charges (PDF)</button>
+    <input type="file" id="cdcFile" accept=".pdf,application/pdf" style="display:none">
     <button class="b-danger" id="btnClear" disabled>Tout vider</button>
     <span class="sep" data-only="edit"></span>
     <button class="b-sec" id="btnCsvAdd" data-only="edit" disabled title="Les articles du CSV sont ajoutés ou mis à jour, les autres sont gardés">➕ CSV : ajouter / mettre à jour</button>
@@ -318,9 +326,11 @@ function decode(buf){
 /* ============ Établissement ============ */
 const FIELDS = ['name','siret','tva','naf','address','zip','city','phone','gerant'];
 const LS_KEY = 'pos_converter_v5_etab';
-function saveEtab(){ try{ const o={}; FIELDS.forEach(f=>o[f]=$('f_'+f).value); localStorage.setItem(LS_KEY, JSON.stringify(o)); }catch(e){} }
-function loadEtab(){ try{ const o = JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(o) FIELDS.forEach(f=>{ if(o[f]!=null) $('f_'+f).value=o[f]; }); }catch(e){} checkSiret(); }
-function etab(){ const o={}; FIELDS.forEach(f=>o[f]=clean($('f_'+f).value)); if(!o.gerant) o.gerant='0000'; return o; }
+// Modes de travail → salles activées dans le JSON (Comptoir, Salle 1, A emporter)
+const MODES = { mDirect:true, mTable:true, mTake:false };
+function saveEtab(){ try{ const o={}; FIELDS.forEach(f=>o[f]=$('f_'+f).value); Object.keys(MODES).forEach(m=>o[m]=$('f_'+m).checked); localStorage.setItem(LS_KEY, JSON.stringify(o)); }catch(e){} }
+function loadEtab(){ try{ const o = JSON.parse(localStorage.getItem(LS_KEY)||'null'); if(o){ FIELDS.forEach(f=>{ if(o[f]!=null) $('f_'+f).value=o[f]; }); Object.keys(MODES).forEach(m=>{ if(typeof o[m]==='boolean') $('f_'+m).checked=o[m]; }); } }catch(e){} checkSiret(); }
+function etab(){ const o={}; FIELDS.forEach(f=>o[f]=clean($('f_'+f).value)); if(!o.gerant) o.gerant='0000'; Object.keys(MODES).forEach(m=>o[m]=$('f_'+m).checked); return o; }
 function luhn(d){ let s=0; for(let i=0;i<d.length;i++){ let n=+d[d.length-1-i]; if(i%2){ n*=2; if(n>9) n-=9; } s+=n; } return s%10===0; }
 function checkSiret(){
   const d = $('f_siret').value.replace(/\D/g,''), t =$('siretTag');
@@ -330,14 +340,20 @@ function checkSiret(){
   t.className = 'tag ' + (ok?'ok':'bad');
   t.textContent = ok ? 'valide' : (okLen ? 'clé Luhn invalide' : d.length+' chiffres');
 }
-$('btnTva').onclick = () => {
-  const d = $('f_siret').value.replace(/\D/g,'');
-  if(d.length < 9) return toast('Saisissez au moins 9 chiffres de SIREN/SIRET.','err');
+// N° TVA intracommunautaire français calculé à partir du SIREN
+function tvaFromSiret(v){
+  const d = String(v||'').replace(/\D/g,''); if(d.length < 9) return '';
   const siren = d.slice(0,9), key = (12 + 3*(parseInt(siren,10)%97)) % 97;
-  $('f_tva').value = 'FR' + String(key).padStart(2,'0') + siren; saveEtab();
+  return 'FR' + String(key).padStart(2,'0') + siren;
+}
+$('btnTva').onclick = () => {
+  const t = tvaFromSiret($('f_siret').value);
+  if(!t) return toast('Saisissez au moins 9 chiffres de SIREN/SIRET.','err');
+  $('f_tva').value = t; saveEtab();
 };
 FIELDS.forEach(f => $('f_'+f).addEventListener('input', ()=>{ saveEtab(); if(f==='siret') checkSiret(); }));
-$('btnResetEtab').onclick = () => { FIELDS.forEach(f=>$('f_'+f).value = f==='gerant'?'0000':''); saveEtab(); checkSiret(); };
+Object.keys(MODES).forEach(m => $('f_'+m).addEventListener('change', saveEtab));
+$('btnResetEtab').onclick = () => { FIELDS.forEach(f=>$('f_'+f).value = f==='gerant'?'0000':''); Object.entries(MODES).forEach(([m,v])=>$('f_'+m).checked=v); saveEtab(); checkSiret(); };
 
 /* ============ Constantes Popina ============ */
 const TAX = { 20:'A58D3A44-34B1-46FC-8481-8101542DA4DE', 10:'59f651fc-4f27-4a0a-98ba-e70d3e218e33', 5.5:'e377eecb-78e8-4d2f-9020-9f790388584a' };
@@ -400,9 +416,9 @@ function baseData(e, now, placesOut){
     cash_movement_motifs:[], third_parties:[], bookings:[], customers:[],
     people:[{client_id:'4AC6F559-74DB-45ED-AAB8-14B9DAAC6851',name:'Gérant',password:e.gerant,pass_key:e.gerant,is_root:true,right_person:true,right_till:true,right_report:true,right_all_orders:true,right_apply_discount:true,right_edit_discount:true,right_delete_order:null,right_cancel_order:true,right_stats_till:true,right_card:true,right_device:true,right_custom_price:true,right_payment_type:true,right_payment_order:true,qrcode:null,key_dallas:null,color_blind_mode_on:false,right_automatic_cash_drawer:true,right_full_stats:true,right_happy_hour:true,right_payed_customer:true,right_client:true,right_manual_cash_drawer:true,right_ownership:true,right_edit_price_type:true,right_transfer_order:true,right_cancel_order_after_note:true,right_edit_justificatif:true,right_update_order_after_note:true}],
     rooms:[
-      room('B9465AAF-B7FB-4B16-A664-8FE3AD4BA4B4','A emporter',2,3,7,{enabled:false,newAfter:true}),
-      room('014FB172-5E2D-49F2-8CB3-46F8F96EA6A2','Salle 1',0,0,1,{enabled:true,ask:true,tables:salle1Tables}),
-      room('D403C194-E0D4-40C4-AEA6-09E751B7F14A','Comptoir',1,2,6,{enabled:true,newAfter:true}),
+      room('B9465AAF-B7FB-4B16-A664-8FE3AD4BA4B4','A emporter',2,3,7,{enabled:e.mTake===true,newAfter:true}),
+      room('014FB172-5E2D-49F2-8CB3-46F8F96EA6A2','Salle 1',0,0,1,{enabled:e.mTable!==false,ask:true,tables:salle1Tables}),
+      room('D403C194-E0D4-40C4-AEA6-09E751B7F14A','Comptoir',1,2,6,{enabled:e.mDirect!==false || (e.mTable===false && e.mTake!==true),newAfter:true}),
       room('50A0B7B2-928D-42CF-ACAD-CB0C94F982D3','Salle 4',0,0,4,{enabled:false,logout:true}),
       room('200A2EE8-276E-48B3-97D0-70E79EC8C124','Salle 2',0,0,2,{enabled:false}),
       room('C612AC82-C9D5-4751-89AF-AE03A1F12DF6','Salle 3',0,0,3,{enabled:false}),
@@ -984,11 +1000,143 @@ $('btnFlyerParse').onclick = () => {
   log('Flyer : TVA proposée 10 % (20 % pour les alcools), groupes Plats / Boissons / Desserts devinés d\'après les familles : à vérifier.','w');
   $('editorCard').scrollIntoView({behavior:'smooth'});
 };
+
+/* ============ Cahier des charges JDC (PDF formulaire) → informations de l'établissement ============ */
+// Chaque champ est reconnu par le libellé imprimé à côté (à gauche ou au-dessus), pas par son nom interne :
+// l'import continue de marcher si le modèle de cahier des charges évolue un peu.
+const nrmTxt = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+const CDC_TEXT = [
+  ['t1',/ligne\s*1|raison sociale/], ['t2',/ligne\s*2/], ['t3',/ligne\s*3/], ['t4',/ligne\s*4/],
+  ['naf',/\bnaf\b|\bape\b/], ['tva',/\btva\b|intracom/], ['siret',/siret|siren/],
+  ['company',/enseigne|nom (de la )?societe/], ['addr',/adresse/], ['cpv',/code postal|ville/],
+  ['contactTel',/telephone|e-?mail/], ['commercial',/commercial/], ['contact',/client|contact/],
+  ['prep',/imprimante|poste|pole/]
+];
+const CDC_CHECK = [
+  ['popina',/popina/], ['tde',/\btde\b/], ['licences',/licence/], ['mDirect',/vente directe|comptoir/], ['mTable',/plan de table|salle/],
+  ['mTake',/emporter/], ['router',/routeur|box|repeteur|wi-?fi/], ['assist',/assistance/]
+];
+function parseCDC(fields, texts){
+  const on = p => texts.filter(t=>t.p===p);
+  // libellé d'une case à cocher : le texte qui la suit sur la même ligne
+  const checkLabel = f => {
+    const [, y1, x2] = [f.rect[0], f.rect[1], f.rect[2]];
+    const its = on(f.p).filter(t=>Math.abs(t.y-y1) < 6 && t.x >= x2-1 && t.x < x2+300).sort((a,b)=>a.x-b.x);
+    const out = []; let end = null;
+    for(const t of its){ if(end===null ? t.x-x2 > 25 : t.x-end > 10) break; out.push(t.s); end = t.x+t.w; }
+    return out.join(' ');
+  };
+  // libellé d'un champ texte : à gauche sur la même ligne (« Ligne 1 : »), sinon juste au-dessus (« ADRESSE DU SITE »)
+  const textLabel = f => {
+    const [x1, y1, , y2] = f.rect, pg = on(f.p);
+    const left = pg.filter(t=>t.y >= y1-3 && t.y <= y2 && t.x+t.w <= x1+4 && x1-(t.x+t.w) < 80).sort((a,b)=>b.x-a.x)[0];
+    if(left) return pg.filter(t=>Math.abs(t.y-left.y) < 3 && t.x+t.w <= x1+4).sort((a,b)=>a.x-b.x).map(t=>t.s).join(' ');
+    const above = pg.filter(t=>t.y >= y2-4 && t.y <= y2+14 && t.x >= x1-12 && t.x <= x1+25).sort((a,b)=>a.y-b.y)[0];
+    return above ? above.s : '';
+  };
+  const raw = {}, checks = [];
+  const txt = fields.filter(f=>!f.check).map(f=>({...f, label:nrmTxt(textLabel(f))})).sort((a,b)=>a.p-b.p || b.rect[3]-a.rect[3]);
+  // zone de plusieurs lignes sans libellé propre : même libellé que le champ juste au-dessus
+  txt.forEach((f,i)=>{ if(f.label) return; const up = txt.slice(0,i).reverse().find(g=>g.p===f.p && Math.abs(g.rect[0]-f.rect[0]) < 8 && g.label); if(up) f.label = up.label; });
+  txt.forEach(f=>{
+    const r = CDC_TEXT.find(([,re])=>re.test(f.label)), v = clean(f.value);
+    if(r && v) (raw[r[0]] = raw[r[0]] || []).push(v);
+  });
+  fields.filter(f=>f.check).forEach(f=>{
+    const label = checkLabel(f), r = CDC_CHECK.find(([,re])=>re.test(nrmTxt(label)));
+    if(r) checks.push({key:r[0], label:clean(label), checked:f.checked});
+  });
+  const v = k => (raw[k]||[]).join(' ').trim();
+  const phoneRe = /(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/;
+  const t4 = v('t4'), phone = (t4.match(phoneRe)||[''])[0];
+  const siret = ((t4.replace(phoneRe,' ')+' '+v('siret')).match(/\d[\d\s]{7,20}\d/g)||[]).map(d=>d.replace(/\s/g,'')).find(d=>d.length===14 || d.length===9) || '';
+  const cpv = v('t3') || v('cpv'), cp = cpv.match(/(\d{5})\s*[-,]?\s*(.*)/);
+  const isOn = k => checks.some(c=>c.key===k && c.checked);
+  const hasModes = checks.some(c=>c.key in MODES);
+  const score = ['t1','t2','t3','t4','company','addr','cpv'].filter(k=>raw[k]).length + (hasModes ? 1 : 0);
+  return {
+    score,
+    etab: { name:v('t1')||v('company'), address:v('t2')||v('addr'), zip:cp?cp[1]:'', city:cp?clean(cp[2]):cpv, phone, siret,
+      naf:(v('naf').match(/\d{2}\.?\d{2}\s?[A-Z]/i)||[''])[0].replace(/[.\s]/g,'').toUpperCase(), tva:v('tva').replace(/\s/g,'').toUpperCase() },
+    modes: hasModes ? Object.fromEntries(Object.keys(MODES).map(m=>[m, isOn(m)])) : null,
+    info: { commercial:v('commercial'), contact:v('contact'), contactTel:v('contactTel'),
+      tde: isOn('tde') && !isOn('popina'), licences: isOn('licences'), assist: isOn('assist'),
+      router: checks.filter(c=>c.key==='router' && c.checked).map(c=>c.label) },
+    prep: raw.prep || []
+  };
+}
+async function readCDC(buf){
+  await loadScript(LIBS.pdf); pdfjsLib.GlobalWorkerOptions.workerSrc = LIBS.pdfWorker;
+  const pdf = await pdfjsLib.getDocument({data: buf}).promise, fields = [], texts = [];
+  for(let n=1; n<=pdf.numPages; n++){
+    const page = await pdf.getPage(n);
+    (await page.getAnnotations()).forEach(a=>{
+      if(!a.fieldName || !a.rect) return;
+      const check = !!(a.checkBox || a.radioButton);
+      if(a.fieldType!=='Tx' && !check) return;
+      const val = a.fieldValue, onVal = a.radioButton ? a.buttonValue : a.exportValue;
+      const [x1,y1,x2,y2] = a.rect, rect = [Math.min(x1,x2), Math.min(y1,y2), Math.max(x1,x2), Math.max(y1,y2)];
+      fields.push({ p:n, name:a.fieldName, check, rect, value: check ? '' : String(Array.isArray(val) ? val.join(' ') : (val ?? '')),
+        checked: check && val!=null && val!=='' && val!=='Off' && (onVal==null || val===onVal) });
+    });
+    (await page.getTextContent()).items.forEach(i=>{ if(i.str && i.str.trim()) texts.push({p:n, s:i.str, x:i.transform[4], y:i.transform[5], w:i.width, h:Math.abs(i.transform[3])||8}); });
+  }
+  return fields.length ? parseCDC(fields, texts) : null;
+}
+function applyCDC(r, name){
+  // nouveau client : on repart d'une fiche vide (sinon le NAF ou le téléphone du client précédent resteraient)
+  FIELDS.forEach(f=>{ if(f!=='gerant') $('f_'+f).value = ''; });
+  Object.entries(r.etab).forEach(([k,val])=>{ if(val) $('f_'+k).value = val; });
+  const tvaCalc = !r.etab.tva && tvaFromSiret(r.etab.siret);
+  if(tvaCalc) $('f_tva').value = tvaCalc;
+  if(r.modes) Object.keys(MODES).forEach(m=>$('f_'+m).checked = r.modes[m]);
+  saveEtab(); checkSiret(); $('etab').open = true;
+  const labels = {name:'nom', siret:'SIRET', naf:'NAF', address:'adresse', zip:'code postal', city:'ville', phone:'téléphone'};
+  const got = Object.keys(labels).filter(k=>r.etab[k]), miss = Object.keys(labels).filter(k=>!r.etab[k]);
+  log(`Cahier des charges ${name} : ${got.map(k=>labels[k]).join(', ')} renseigné(s)${tvaCalc ? ', n° TVA calculé depuis le SIREN' : r.etab.tva ? ', n° TVA' : ''}.`);
+  if(miss.length) log(`Absent du cahier des charges : ${miss.map(k=>labels[k]).join(', ')}.`,'w');
+  if($('siretTag').classList.contains('bad')) log('SIRET/SIREN du cahier des charges invalide : à vérifier avec le client.','e');
+  if(r.modes){
+    const m = [r.modes.mDirect&&'vente directe (Comptoir)', r.modes.mTable&&'plan de table (Salle 1)', r.modes.mTake&&'à emporter'].filter(Boolean);
+    log(`Modes de travail : ${m.join(', ') || 'aucun coché (Comptoir activé par défaut)'}.`);
+  }
+  const i = r.info;
+  if(i.commercial || i.contact) log(`Commercial : ${i.commercial||'—'} · Client : ${i.contact||'—'}${i.contactTel ? ' · '+i.contactTel : ''} (non imprimé sur le ticket).`);
+  if(i.tde) log('Le cahier des charges coche TDE (iQ), pas Popina : vérifiez le système avant de générer le JSON.','e');
+  if(i.licences) log('Vente de licences seules : la liste et les photos des étiquettes S/N des caisses et imprimantes doivent être fournies.','w');
+  if(i.router.length) log(`Routeur Ruijie : ${i.router.join(', ')}.`);
+  if(i.assist) log("Assistance au service demandée le midi : repas technicien à prévoir.",'w');
+  if(r.prep.length){
+    const names = [...new Set(r.prep.map(s=>clean(s.split(/\s[-–:]\s|:|\(/)[0])).filter(Boolean))];
+    if(state.rows.length) snapshot('pôles du cahier des charges');
+    state.places = names.map(n=>({id:uuid(), name:n, extra:{}}));
+    log(`Pôles de préparation créés : ${names.join(', ')} (cahier des charges : « ${r.prep.join(' / ')} »).`);
+    if(state.rows.length) renderAll();
+  } else log('Aucun pôle de préparation indiqué : Cuisine et Bar par défaut, à confirmer.','w');
+  toast(`Établissement « ${r.etab.name || '?'} » rempli depuis le cahier des charges`, 'ok');
+  $('etab').scrollIntoView({behavior:'smooth'});
+}
+// fallback = true : PDF déposé dans la zone d'import → si ce n'est pas un cahier des charges, on le lit comme un flyer
+async function importCDC(file, fallback){
+  try{
+    const r = await readCDC(await file.arrayBuffer());
+    if(r && r.score >= 3) return applyCDC(r, file.name);
+    if(fallback) return readFlyer([file]);
+    toast("Ce PDF n'est pas un cahier des charges rempli (aucun champ de formulaire reconnu).",'err');
+  }catch(e){
+    console.error(e);
+    if(fallback) return readFlyer([file]);
+    log('Cahier des charges : '+e.message,'e'); toast('Lecture du cahier des charges impossible : '+e.message,'err');
+  }
+}
+$('btnCdc').onclick = () => $('cdcFile').click();
+$('cdcFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if(f) importCDC(f, false); };
 const isFlyerFile = f => /^image\//.test(f.type) || /pdf/i.test(f.type) || /\.(pdf|jpe?g|png|webp|heic)$/i.test(f.name);
 
 function handleFile(file, done){
   if(isFlyerFile(file)){
     if(state.mode==='edit'){ toast('Les flyers s\'importent dans le mode « Créer une carte ».','err'); return; }
+    if(/pdf/i.test(file.type) || /\.pdf$/i.test(file.name)) return importCDC(file, true); // cahier des charges, sinon flyer
     return readFlyer([file]);
   }
   log(`Chargement de ${file.name} (${(file.size/1024).toFixed(1)} Ko)…`);
